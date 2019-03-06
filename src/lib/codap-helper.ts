@@ -1,5 +1,10 @@
 import codapInterface from "./CodapInterface";
 
+export interface DataContext {
+  name: string;
+  title: string;
+}
+
 export function initializePlugin(pluginName: string, version: string, dimensions: {width: number, height: number}) {
   const interfaceConfig = {
     name: pluginName,
@@ -11,6 +16,25 @@ export function initializePlugin(pluginName: string, version: string, dimensions
 
 const dataSetString = (contextName: string) => `dataContext[${contextName}]`;
 
+export function addDataContextsListListener(callback: () => void) {
+  codapInterface.on("notify", "documentChangeNotice", callback);
+}
+
+export function addDataContextChangeListener(context: DataContext, callback: () => void) {
+  codapInterface.on("notify", `dataContextChangeNotice[${context.name}]`, callback);
+}
+
+export function getAllDataContexts() {
+  return codapInterface.sendRequest({
+    "action": "get",
+    "resource": "dataContextList"
+  }, function(result: { success: any; values: any[]}) {
+    if (result && result.success) {
+      return result.values;
+    }
+    return [];
+  });
+}
 export function createDataContext(dataContextName: string) {
   // Determine if CODAP already has the Data Context we need.
   // If not, create it.

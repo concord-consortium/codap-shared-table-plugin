@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import { initializePlugin, openTable, addData, createDataContext } from './lib/codap-helper';
+import React, { Component, ChangeEvent } from 'react';
+import { initializePlugin, openTable, addData, createDataContext, getAllDataContexts, addDataContextsListListener, DataContext, addDataContextChangeListener } from './lib/codap-helper';
 import './App.css';
 
 const kPluginName = "Collaborative Data Sharing";
@@ -8,15 +8,31 @@ const kInitialDimensions = {
   width: 350,
   height: 400
 }
-const kDataContextName = "collaborative tables";
+
+const kNewSharedTable = "new-table";
+
+interface IState {
+  availableDataContexts: any[]
+  selectedDataContext: string
+}
 
 class App extends Component {
+
+  public state: IState = {
+    availableDataContexts: [],
+    selectedDataContext: kNewSharedTable
+  };
+
   public componentWillMount() {
-    initializePlugin(kPluginName, kVersion, kInitialDimensions);
-      // .then(() => createDataContext(kDataContextName));
+    initializePlugin(kPluginName, kVersion, kInitialDimensions)
+      .then(() => addDataContextsListListener(this.updateDataContexts))
+      .then(this.updateDataContexts)
   }
 
   public render() {
+    const availableContextOptions = this.state.availableDataContexts.map((dc: DataContext) =>
+      <option key={dc.name} value={dc.name}>{dc.title}</option>
+    );
     return (
       <div className="App">
         To create or join a collaborative table
@@ -24,8 +40,9 @@ class App extends Component {
           <li>
             Select a table to share <strong>or</strong> create a new one
             <div>
-              <select value={"new-table"}>
-                <option value="new-table">Create new table</option>
+              <select value={this.state.selectedDataContext} onChange={this.updateSelectedDataContext}>
+                { availableContextOptions }
+                <option value={kNewSharedTable}>Create new table</option>
               </select>
             </div>
           </li>
@@ -53,6 +70,23 @@ class App extends Component {
         </ol>
       </div>
     );
+  }
+
+  updateDataContexts = () => {
+    getAllDataContexts().then((res: any) => {
+      const contexts = res.values;
+      const existingListeners = this.state.availableDataContexts.map(c => c.name);
+      contexts.forEach((context: DataContext) => {
+        if (existingListeners.indexOf(context.name) < 0) {
+          addDataContextChangeListener(context, this.updateDataContexts);
+        }
+      });
+      this.setState({availableDataContexts: (res as any).values});
+    })
+  }
+
+  updateSelectedDataContext = (event: ChangeEvent<HTMLSelectElement>) => {
+    this.setState({selectedDataContext: event.target.value});
   }
 }
 
