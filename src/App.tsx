@@ -1,5 +1,6 @@
 import React, { Component, ChangeEvent } from 'react';
-import { initializePlugin, openTable, addData, createDataContext, getAllDataContexts, addDataContextsListListener, DataContext, addDataContextChangeListener } from './lib/codap-helper';
+import { initializePlugin, openTable, getAllDataContexts, addDataContextsListListener, DataContext,
+  addDataContextChangeListener, createUniqueDataContext, addNewCollaborationCollections } from './lib/codap-helper';
 import './App.css';
 
 const kPluginName = "Collaborative Data Sharing";
@@ -10,17 +11,21 @@ const kInitialDimensions = {
 }
 
 const kNewSharedTable = "new-table";
+const kNewDataContextName = "collaborative-table";
+const kNewDataContextTitle = "Collaborative Table";
 
 interface IState {
   availableDataContexts: any[]
   selectedDataContext: string
+  personalDataLabel: string
 }
 
 class App extends Component {
 
   public state: IState = {
     availableDataContexts: [],
-    selectedDataContext: kNewSharedTable
+    selectedDataContext: kNewSharedTable,
+    personalDataLabel: ""
   };
 
   public componentWillMount() {
@@ -33,6 +38,8 @@ class App extends Component {
     const availableContextOptions = this.state.availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
+    const readyToShare = !!this.state.personalDataLabel;
+
     return (
       <div className="App">
         To create or join a collaborative table
@@ -49,21 +56,21 @@ class App extends Component {
           <li>
             Provide a name or label for grouping
             <div>
-              <input type="text" value={""} />
+              <input type="text" value={this.state.personalDataLabel} onChange={this.updateDataLabel} />
             </div>
           </li>
           <li>
             Invite others to join you your table <strong>or</strong> join another group
             <div>
               <div>
-                <button>Allow others to join your table</button>
+                <button onClick={this.initiateShare} disabled={!readyToShare}>Allow others to join your table</button>
               </div>
               <div>
                 or
               </div>
               <div>
-                Enter code to join another group: <input type="text" value={""} />
-                <button>Join</button>
+                Enter code to join another group: <input type="text" />
+                <button disabled={true}>Join</button>
               </div>
             </div>
           </li>
@@ -87,6 +94,27 @@ class App extends Component {
 
   updateSelectedDataContext = (event: ChangeEvent<HTMLSelectElement>) => {
     this.setState({selectedDataContext: event.target.value});
+  }
+
+  updateDataLabel = (event: ChangeEvent<HTMLInputElement>) => {
+    this.setState({personalDataLabel: event.target.value});
+  }
+
+  initiateShare = () => {
+    const {selectedDataContext, personalDataLabel} = this.state;
+    if (selectedDataContext === kNewSharedTable) {
+      // create new data context for sharing
+      createUniqueDataContext(kNewDataContextName, kNewDataContextTitle)
+        .then((res: any) => {
+          if (res && res.success) {
+            const dataContextName = res.values.name;
+            return addNewCollaborationCollections(dataContextName, personalDataLabel);
+          } else {
+            return Promise.reject(new Error('failed to create data context'));
+          }
+        })
+        .then(openTable);
+    }
   }
 }
 

@@ -35,34 +35,81 @@ export function getAllDataContexts() {
     return [];
   });
 }
-export function createDataContext(dataContextName: string) {
-  // Determine if CODAP already has the Data Context we need.
-  // If not, create it.
-  return codapInterface.sendRequest({
-      action:'get',
-      resource: dataSetString(dataContextName)
-      }, function (result: { success: any; }) {
-      if (result && !result.success) {
-        codapInterface.sendRequest({
-          action: 'create',
-          resource: 'dataContext',
-          values: {
-            name: dataContextName,
-            collections: [
-              {
-                name: 'items',
-                labels: {
-                  pluralCase: "items",
-                  setOfCasesWithArticle: "an item"
-                },
-                attrs: [{name: "value"}]
-              }
-            ]
-          }
-        });
+
+// if passed "foo" returns "foo-1"
+// if passed "foo-bar-23" returns "foo-bar-24"
+function incrementName(name: string) {
+  if (/-(\d*)$/.test(name)) {
+    const count = /-(\d*)$/.exec(name)![1];
+    const next = "" + (parseInt(count) + 1)
+    return name.replace(/\d*$/, next);
+  } else {
+    return name + "-1";
+  }
+}
+
+export function createUniqueDataContext(dataContextPrefix: string, title: string) {
+  return getAllDataContexts()
+    .then((res: any) => {
+      const contexts = res.values;
+      const contextNames: string[] = contexts.map((c: DataContext) => c.name);
+      let newDataContextName = dataContextPrefix;
+      while (contextNames.indexOf(newDataContextName) > -1) {
+        newDataContextName = incrementName(newDataContextName);
       }
+      return createDataContext(newDataContextName, title);
+    });
+}
+
+export function createDataContext(dataContextName: string, title: string) {
+  return codapInterface.sendRequest({
+    action: 'create',
+    resource: 'dataContext',
+    values: {
+      name: dataContextName,
+      title,
+      collections: []
     }
-  );
+  });
+}
+
+export function addCollections(dataContextName: string, collections: any[]) {
+  return codapInterface.sendRequest({
+    action: "create",
+    resource: `dataContext[${dataContextName}].collection`,
+    values: collections
+  });
+}
+
+export function createUserCase(dataContextName: string, personalDataLabel: string) {
+  return codapInterface.sendRequest({
+    action: "create",
+    resource: `dataContext[${dataContextName}].item`,
+    values: {
+        Name: personalDataLabel
+    }
+  });
+}
+
+export function addNewCollaborationCollections(dataContextName: string, personalDataLabel: string) {
+  return addCollections(dataContextName, [{
+      name: "Collaborators",
+      title: "List of collaborators",
+      labels: {
+        singleCase: "name",
+        pluralCase: "names"
+      },
+      attrs: [{name: "Name"}]
+    },
+    {
+      name: "Data",
+      title: "Data",
+      parent: "Collaborators",
+      attrs: [{name: "NewAttribute"}]
+    }
+  ]).then(() => {
+    createUserCase(dataContextName, personalDataLabel);
+  });
 }
 
 export function openTable() {
