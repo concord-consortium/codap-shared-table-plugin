@@ -1,6 +1,7 @@
 import React, { Component, ChangeEvent } from 'react';
+import * as randomize from 'randomatic';
 import { initializePlugin, openTable, getAllDataContexts, addDataContextsListListener, DataContext,
-  addDataContextChangeListener, createUniqueDataContext, addNewCollaborationCollections } from './lib/codap-helper';
+  addDataContextChangeListener, createUniqueDataContext, addNewCollaborationCollections, addCollaborationParentToExistingCollection, resizePlugin } from './lib/codap-helper';
 import './App.css';
 
 const kPluginName = "Collaborative Data Sharing";
@@ -9,15 +10,20 @@ const kInitialDimensions = {
   width: 350,
   height: 400
 }
+const kSharedDimensions = {
+  width: 350,
+  height: 200
+}
 
 const kNewSharedTable = "new-table";
 const kNewDataContextName = "collaborative-table";
 const kNewDataContextTitle = "Collaborative Table";
 
 interface IState {
-  availableDataContexts: any[]
+  availableDataContexts: DataContext[]
   selectedDataContext: string
   personalDataLabel: string
+  shareId?: string
 }
 
 class App extends Component {
@@ -35,6 +41,16 @@ class App extends Component {
   }
 
   public render() {
+    if (!this.state.shareId) {
+      resizePlugin(kInitialDimensions.width, kInitialDimensions.height);
+      return this.renderForm();
+    } else {
+      resizePlugin(kSharedDimensions.width, kSharedDimensions.height);
+      return this.renderSharingDialog();
+    }
+  }
+
+  renderForm() {
     const availableContextOptions = this.state.availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
@@ -79,6 +95,31 @@ class App extends Component {
     );
   }
 
+  renderSharingDialog() {
+    const {selectedDataContext, shareId, availableDataContexts} = this.state;
+    const dataContext = availableDataContexts.find((dc: DataContext) => dc.name === selectedDataContext);
+    const tableName = dataContext ? dataContext.title : selectedDataContext;
+    return (
+      <div className="App sharing">
+        <div>
+          Table collaboration enabled for
+        </div>
+        <div className="callout">
+          {tableName}
+        </div>
+        <div>
+          Others can join this table by using the code
+        </div>
+        <div className="callout shareId">
+          {shareId}
+        </div>
+        <div>
+          <button onClick={this.leaveShare}>Leave collaboration or join a different table</button>
+        </div>
+      </div>
+    )
+  }
+
   updateDataContexts = () => {
     getAllDataContexts().then((res: any) => {
       const contexts = res.values;
@@ -108,13 +149,27 @@ class App extends Component {
         .then((res: any) => {
           if (res && res.success) {
             const dataContextName = res.values.name;
+            this.setState({selectedDataContext: dataContextName});
             return addNewCollaborationCollections(dataContextName, personalDataLabel);
           } else {
             return Promise.reject(new Error('failed to create data context'));
           }
         })
-        .then(openTable);
+        .then(openTable)
+        // FIXME: move to outside if-statement once existing table option is working
+        .then(() => {
+          const shareId = randomize('a0', 6, { exclude: '0oOiIlL1' });
+          this.setState({shareId});
+        })
     }
+  }
+
+  leaveShare = () => {
+    this.setState({
+      shareId: null,
+      selectedDataContext: kNewSharedTable,
+      personalDataLabel: ""
+    });
   }
 }
 

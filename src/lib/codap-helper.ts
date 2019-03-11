@@ -130,3 +130,16 @@ export function addData(dataContextName: string, data: number[]) {
     values
   });
 }
+
+export function resizePlugin(width: number, height: number) {
+  codapInterface.sendRequest({
+    "action": "update",
+    "resource": "interactiveFrame",
+    "values": {
+      "dimensions": {
+        "width": width,
+        "height": height
+      }
+    }
+  });
+}

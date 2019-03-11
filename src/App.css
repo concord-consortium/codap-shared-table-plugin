@@ -9,3 +9,14 @@
 .App li {
   margin-bottom: 12px;
 }
+
+.App.sharing .callout {
+  text-align: center;
+}
+
+.App.sharing .callout.shareId {
+  margin-left: 30px;
+  font-weight: bold;
+  font-size: 2em;
+  letter-spacing: 2px;
+}
