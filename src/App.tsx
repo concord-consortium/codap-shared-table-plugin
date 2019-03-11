@@ -127,14 +127,21 @@ class App extends Component {
 
   updateDataContexts = () => {
     getAllDataContexts().then((res: any) => {
-      const contexts = res.values;
+      const contexts: DataContext[] = res.values;
       const existingListeners = this.state.availableDataContexts.map(c => c.name);
-      contexts.forEach((context: DataContext) => {
-        if (existingListeners.indexOf(context.name) < 0) {
-          addDataContextChangeListener(context, this.updateDataContexts);
+      contexts.forEach((dc) => {
+        if (existingListeners.indexOf(dc.name) < 0) {
+          addDataContextChangeListener(dc, this.updateDataContexts);
         }
       });
       this.setState({availableDataContexts: (res as any).values});
+
+      if (this.state.shareId) {
+        // once we are  sharing with other people, we will need to prevent echoes
+        getDataContext(this.state.selectedDataContext).then((res: any) => {
+          database.set("dataContext", res.values);
+        });
+      }
     })
   }
 
