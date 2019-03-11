@@ -143,3 +143,10 @@ export function resizePlugin(width: number, height: number) {
     }
   });
 }
+
+export function getDataContext(dataContextName: string) {
+  return codapInterface.sendRequest({
+    "action": "get",
+    "resource": `dataContext[${dataContextName}]`
+  })
+}

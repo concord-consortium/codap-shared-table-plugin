@@ -1,8 +1,9 @@
 import React, { Component, ChangeEvent } from 'react';
 import * as randomize from 'randomatic';
 import { initializePlugin, openTable, getAllDataContexts, addDataContextsListListener, DataContext,
-  addDataContextChangeListener, createUniqueDataContext, addNewCollaborationCollections, addCollaborationParentToExistingCollection, resizePlugin } from './lib/codap-helper';
+  addDataContextChangeListener, createUniqueDataContext, addNewCollaborationCollections, addCollaborationParentToExistingCollection, resizePlugin, getDataContext } from './lib/codap-helper';
 import './App.css';
+import { DB } from './lib/db';
 
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = "0.0.1";
@@ -26,6 +27,8 @@ interface IState {
   shareId?: string
 }
 
+let database: DB;
+
 class App extends Component {
 
   public state: IState = {
@@ -37,7 +40,9 @@ class App extends Component {
   public componentWillMount() {
     initializePlugin(kPluginName, kVersion, kInitialDimensions)
       .then(() => addDataContextsListListener(this.updateDataContexts))
-      .then(this.updateDataContexts)
+      .then(this.updateDataContexts);
+
+    database = new DB();
   }
 
   public render() {
@@ -143,12 +148,13 @@ class App extends Component {
 
   initiateShare = () => {
     const {selectedDataContext, personalDataLabel} = this.state;
+    let dataContextName: string;
     if (selectedDataContext === kNewSharedTable) {
       // create new data context for sharing
       createUniqueDataContext(kNewDataContextName, kNewDataContextTitle)
         .then((res: any) => {
           if (res && res.success) {
-            const dataContextName = res.values.name;
+            dataContextName = res.values.name;
             this.setState({selectedDataContext: dataContextName});
             return addNewCollaborationCollections(dataContextName, personalDataLabel);
           } else {
@@ -160,6 +166,10 @@ class App extends Component {
         .then(() => {
           const shareId = randomize('a0', 6, { exclude: '0oOiIlL1' });
           this.setState({shareId});
+          database.setShareId(shareId);
+          getDataContext(dataContextName).then((res: any) => {
+            database.set("dataContext", res.values);
+          });
         })
     }
   }
