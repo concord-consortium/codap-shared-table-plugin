@@ -79,6 +79,11 @@ interface IConfig {
 
 var config: IConfig | null = null;
 
+export interface CodapApiResponse {
+  success: boolean;
+  values?: any;
+}
+
 /**
  * A serializable object shared with CODAP. This is saved as a part of the
  * CODAP document. It is intended for the data interactive's use to store
@@ -299,7 +304,7 @@ const codapInterface = {
    * @return {Promise} The promise of the response from CODAP.
    */
   sendRequest: function (message: any, callback?: any) {
-    return new Promise(function (resolve, reject){
+    return new Promise<CodapApiResponse>(function (resolve, reject){
       function handleResponse (request: any, response: {success: boolean} | undefined, callback: (arg0: any, arg1: any) => void) {
         if (response === undefined) {
           // console.warn('handleResponse: CODAP request timed out');

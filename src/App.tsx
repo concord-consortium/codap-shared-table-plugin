@@ -1,7 +1,8 @@
 import React, { Component, ChangeEvent } from 'react';
 import * as randomize from 'randomatic';
 import { initializePlugin, openTable, getAllDataContexts, addDataContextsListListener, DataContext,
-  addDataContextChangeListener, createUniqueDataContext, addNewCollaborationCollections, addCollaborationParentToExistingCollection, resizePlugin, getDataContext } from './lib/codap-helper';
+  addDataContextChangeListener, createUniqueDataContext, addNewCollaborationCollections, resizePlugin,
+  getDataContext } from './lib/codap-helper';
 import './App.css';
 import { DB } from './lib/db';
 
@@ -125,24 +126,23 @@ class App extends Component {
     )
   }
 
-  updateDataContexts = () => {
-    getAllDataContexts().then((res: any) => {
-      const contexts: DataContext[] = res.values;
-      const existingListeners = this.state.availableDataContexts.map(c => c.name);
-      contexts.forEach((dc) => {
-        if (existingListeners.indexOf(dc.name) < 0) {
-          addDataContextChangeListener(dc, this.updateDataContexts);
-        }
-      });
-      this.setState({availableDataContexts: (res as any).values});
-
-      if (this.state.shareId) {
-        // once we are  sharing with other people, we will need to prevent echoes
-        getDataContext(this.state.selectedDataContext).then((res: any) => {
-          database.set("dataContext", res.values);
-        });
+  updateDataContexts = async () => {
+    const contexts = await getAllDataContexts();
+    const existingListeners = this.state.availableDataContexts.map(c => c.name);
+    contexts.forEach((dc) => {
+      if (existingListeners.indexOf(dc.name) < 0) {
+        addDataContextChangeListener(dc, this.updateDataContexts);
       }
-    })
+    });
+    this.setState({availableDataContexts: contexts});
+
+    if (this.state.shareId) {
+      // once we are  sharing with other people, we will need to prevent echoes
+      const dataContext = await getDataContext(this.state.selectedDataContext);
+      if (dataContext) {
+        database.set("dataContext", dataContext);
+      };
+    }
   }
 
   updateSelectedDataContext = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -153,31 +153,33 @@ class App extends Component {
     this.setState({personalDataLabel: event.target.value});
   }
 
-  initiateShare = () => {
+  initiateShare = async () => {
     const {selectedDataContext, personalDataLabel} = this.state;
     let dataContextName: string;
+
     if (selectedDataContext === kNewSharedTable) {
       // create new data context for sharing
-      createUniqueDataContext(kNewDataContextName, kNewDataContextTitle)
-        .then((res: any) => {
-          if (res && res.success) {
-            dataContextName = res.values.name;
-            this.setState({selectedDataContext: dataContextName});
-            return addNewCollaborationCollections(dataContextName, personalDataLabel);
-          } else {
-            return Promise.reject(new Error('failed to create data context'));
-          }
-        })
-        .then(openTable)
-        // FIXME: move to outside if-statement once existing table option is working
-        .then(() => {
-          const shareId = randomize('a0', 6, { exclude: '0oOiIlL1' });
-          this.setState({shareId});
-          database.setShareId(shareId);
-          getDataContext(dataContextName).then((res: any) => {
-            database.set("dataContext", res.values);
-          });
-        })
+      const newContext = await createUniqueDataContext(kNewDataContextName, kNewDataContextTitle);
+      if (newContext) {
+        dataContextName = newContext.name;
+        this.setState({selectedDataContext: dataContextName});
+        await addNewCollaborationCollections(dataContextName, personalDataLabel);
+        openTable();
+      } else {
+        throw new Error("failed to create new data context");
+      }
+    } else {
+      // only supporting new contexts right now
+      return;
+    }
+
+    const shareId = randomize('a0', 6, { exclude: '0oOiIlL1' });
+    this.setState({shareId});
+    database.setShareId(shareId);
+
+    const updatedNewContext = await getDataContext(dataContextName);
+    if (updatedNewContext) {
+      database.set("dataContext", updatedNewContext);
     }
   }
 
