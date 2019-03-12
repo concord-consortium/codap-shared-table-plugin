@@ -1,17 +1,19 @@
-import codapInterface from "./CodapInterface";
+import codapInterface, { CodapApiResponse } from "./CodapInterface";
 
 export interface DataContext {
   name: string;
   title: string;
+  collections?: any[];
 }
 
-export function initializePlugin(pluginName: string, version: string, dimensions: {width: number, height: number}) {
+export async function initializePlugin(pluginName: string, version: string,
+    dimensions: {width: number, height: number}) {
   const interfaceConfig = {
     name: pluginName,
     version: version,
     dimensions: dimensions
   };
-  return codapInterface.init(interfaceConfig);
+  return await codapInterface.init(interfaceConfig);
 }
 
 const dataSetString = (contextName: string) => `dataContext[${contextName}]`;
@@ -24,16 +26,15 @@ export function addDataContextChangeListener(context: DataContext, callback: () 
   codapInterface.on("notify", `dataContextChangeNotice[${context.name}]`, callback);
 }
 
-export function getAllDataContexts() {
-  return codapInterface.sendRequest({
+export async function getAllDataContexts() {
+  const result: CodapApiResponse = await codapInterface.sendRequest({
     "action": "get",
     "resource": "dataContextList"
-  }, function(result: { success: any; values: any[]}) {
-    if (result && result.success) {
-      return result.values;
-    }
-    return [];
   });
+  if (result && result.success) {
+    return result.values as DataContext[];
+  }
+  return [];
 }
 
 // if passed "foo" returns "foo-1"
@@ -48,21 +49,19 @@ function incrementName(name: string) {
   }
 }
 
-export function createUniqueDataContext(dataContextPrefix: string, title: string) {
-  return getAllDataContexts()
-    .then((res: any) => {
-      const contexts = res.values;
-      const contextNames: string[] = contexts.map((c: DataContext) => c.name);
-      let newDataContextName = dataContextPrefix;
-      while (contextNames.indexOf(newDataContextName) > -1) {
-        newDataContextName = incrementName(newDataContextName);
-      }
-      return createDataContext(newDataContextName, title);
-    });
+export async function createUniqueDataContext(dataContextPrefix: string, title: string) {
+  const contexts = await getAllDataContexts();
+  const contextNames: string[] = contexts.map((c: DataContext) => c.name);
+  let newDataContextName = dataContextPrefix;
+  while (contextNames.indexOf(newDataContextName) > -1) {
+    newDataContextName = incrementName(newDataContextName);
+  }
+  const newContext = await createDataContext(newDataContextName, title);
+  return newContext;
 }
 
-export function createDataContext(dataContextName: string, title: string) {
-  return codapInterface.sendRequest({
+export async function createDataContext(dataContextName: string, title: string): Promise<DataContext | null> {
+  const res = await codapInterface.sendRequest({
     action: 'create',
     resource: 'dataContext',
     values: {
@@ -71,18 +70,22 @@ export function createDataContext(dataContextName: string, title: string) {
       collections: []
     }
   });
+  if (res.success) {
+    return res.values;
+  }
+  return null;
 }
 
-export function addCollections(dataContextName: string, collections: any[]) {
-  return codapInterface.sendRequest({
+export async function addCollections(dataContextName: string, collections: any[]) {
+  await codapInterface.sendRequest({
     action: "create",
     resource: `dataContext[${dataContextName}].collection`,
     values: collections
   });
 }
 
-export function createUserCase(dataContextName: string, personalDataLabel: string) {
-  return codapInterface.sendRequest({
+export async function createUserCase(dataContextName: string, personalDataLabel: string) {
+  await codapInterface.sendRequest({
     action: "create",
     resource: `dataContext[${dataContextName}].item`,
     values: {
@@ -91,8 +94,8 @@ export function createUserCase(dataContextName: string, personalDataLabel: strin
   });
 }
 
-export function addNewCollaborationCollections(dataContextName: string, personalDataLabel: string) {
-  return addCollections(dataContextName, [{
+export async function addNewCollaborationCollections(dataContextName: string, personalDataLabel: string) {
+  await addCollections(dataContextName, [{
       name: "Collaborators",
       title: "List of collaborators",
       labels: {
@@ -107,9 +110,8 @@ export function addNewCollaborationCollections(dataContextName: string, personal
       parent: "Collaborators",
       attrs: [{name: "NewAttribute"}]
     }
-  ]).then(() => {
-    createUserCase(dataContextName, personalDataLabel);
-  });
+  ]);
+  await createUserCase(dataContextName, personalDataLabel);
 }
 
 export function openTable() {
@@ -119,15 +121,6 @@ export function openTable() {
     values: {
       type: 'caseTable'
     }
-  });
-}
-
-export function addData(dataContextName: string, data: number[]) {
-  const values = data.map(d => ({value: d}));
-  codapInterface.sendRequest({
-    action: 'create',
-    resource: `${dataSetString(dataContextName)}.item`,
-    values
   });
 }
 
@@ -144,9 +137,13 @@ export function resizePlugin(width: number, height: number) {
   });
 }
 
-export function getDataContext(dataContextName: string) {
-  return codapInterface.sendRequest({
+export async function getDataContext(dataContextName: string): Promise<DataContext | null> {
+  const res = await codapInterface.sendRequest({
     "action": "get",
     "resource": `dataContext[${dataContextName}]`
-  })
+  });
+  if (res.success) {
+    return res.values;
+  }
+  return null;
 }
