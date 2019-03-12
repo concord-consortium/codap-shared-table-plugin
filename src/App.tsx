@@ -1,10 +1,10 @@
-import React, { Component, ChangeEvent } from 'react';
-import * as randomize from 'randomatic';
+import React, { Component, ChangeEvent } from "react";
+import * as randomize from "randomatic";
 import { initializePlugin, openTable, getAllDataContexts, addDataContextsListListener, DataContext,
   addDataContextChangeListener, createUniqueDataContext, addNewCollaborationCollections, resizePlugin,
-  getDataContext } from './lib/codap-helper';
-import './App.css';
-import { DB } from './lib/db';
+  getDataContext, getItemsOfCollaborator} from "./lib/codap-helper";
+import "./App.css";
+import { DB } from "./lib/db";
 
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = "0.0.1";
@@ -38,10 +38,10 @@ class App extends Component {
     personalDataLabel: ""
   };
 
-  public componentWillMount() {
+  public componentDidMount() {
     initializePlugin(kPluginName, kVersion, kInitialDimensions)
-      .then(() => addDataContextsListListener(this.updateDataContexts))
-      .then(this.updateDataContexts);
+      .then(() => addDataContextsListListener(this.updateAvailableDataContexts))
+      .then(this.updateAvailableDataContexts);
 
     database = new DB();
   }
@@ -126,22 +126,30 @@ class App extends Component {
     )
   }
 
-  updateDataContexts = async () => {
+  updateAvailableDataContexts = async () => {
     const contexts = await getAllDataContexts();
     const existingListeners = this.state.availableDataContexts.map(c => c.name);
     contexts.forEach((dc) => {
       if (existingListeners.indexOf(dc.name) < 0) {
-        addDataContextChangeListener(dc, this.updateDataContexts);
+        addDataContextChangeListener(dc, this.handleDataContextUpdate);
       }
     });
     this.setState({availableDataContexts: contexts});
+  }
+
+  handleDataContextUpdate = async () => {
+    this.updateAvailableDataContexts(); // existing dataContext name may have changed
 
     if (this.state.shareId) {
-      // once we are  sharing with other people, we will need to prevent echoes
+      // update data context details
+      // note, once we are  sharing with other people, we will need to prevent echoes
       const dataContext = await getDataContext(this.state.selectedDataContext);
       if (dataContext) {
         database.set("dataContext", dataContext);
       };
+
+      const items = await getItemsOfCollaborator(this.state.selectedDataContext, this.state.personalDataLabel);
+      database.set(`items/${this.state.personalDataLabel}`, items);
     }
   }
 
@@ -173,7 +181,7 @@ class App extends Component {
       return;
     }
 
-    const shareId = randomize('a0', 6, { exclude: '0oOiIlL1' });
+    const shareId = randomize("a0", 6, { exclude: "0oOiIlL1" });
     this.setState({shareId});
     database.setShareId(shareId);
 

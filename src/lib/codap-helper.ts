@@ -62,8 +62,8 @@ export async function createUniqueDataContext(dataContextPrefix: string, title: 
 
 export async function createDataContext(dataContextName: string, title: string): Promise<DataContext | null> {
   const res = await codapInterface.sendRequest({
-    action: 'create',
-    resource: 'dataContext',
+    action: "create",
+    resource: "dataContext",
     values: {
       name: dataContextName,
       title,
@@ -108,7 +108,7 @@ export async function addNewCollaborationCollections(dataContextName: string, pe
       name: "Data",
       title: "Data",
       parent: "Collaborators",
-      attrs: [{name: "NewAttribute"}]
+      attrs: [{name: "NewAttribute", editable: true}]
     }
   ]);
   await createUserCase(dataContextName, personalDataLabel);
@@ -116,10 +116,10 @@ export async function addNewCollaborationCollections(dataContextName: string, pe
 
 export function openTable() {
   codapInterface.sendRequest({
-    action: 'create',
-    resource: 'component',
+    action: "create",
+    resource: "component",
     values: {
-      type: 'caseTable'
+      type: "caseTable"
     }
   });
 }
@@ -146,4 +146,15 @@ export async function getDataContext(dataContextName: string): Promise<DataConte
     return res.values;
   }
   return null;
+}
+
+export async function getItemsOfCollaborator(dataContextName: string, name: string): Promise<any[]> {
+  const res = await codapInterface.sendRequest({
+    "action": "get",
+    "resource": `dataContext[${dataContextName}].itemSearch[Name==${name}]`
+  });
+  if (res.success) {
+    return res.values;
+  }
+  return [];
 }
