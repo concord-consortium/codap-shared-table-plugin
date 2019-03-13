@@ -207,27 +207,33 @@ class App extends Component {
     const contextData = response && response.val();
     if (contextData) {
       const { dataContext, items } = contextData;
+      const existingDataContext = await Codap.getDataContext(dataContext.name);
 
-      // fix parent references -- assumes collections are written out in order
-      const collectionNames: string[] = [];
-      dataContext.collections.forEach((collection: any, index: number) => {
-        collectionNames.push(collection.name);
-        if (index > 0) {
-          collection.parent = collectionNames[index - 1];
-        }
-      });
-      await Codap.createDataContext(dataContext);
+      if (!existingDataContext) {
+        // fix parent references -- assumes collections are written out in order
+        const collectionNames: string[] = [];
+        dataContext.collections.forEach((collection: any, index: number) => {
+          collectionNames.push(collection.name);
+          if (index > 0) {
+            collection.parent = collectionNames[index - 1];
+          }
+        });
+        await Codap.createDataContext(dataContext);
 
-      // combine items from all users in a single array
-      if (items) {
-        const allItems = [];
-        // tslint:disable-next-line: forin
-        for (const label in items) {
-          allItems.push(...items[label]);
+        // combine items from all users in a single array
+        if (items) {
+          const allItems = [];
+          // tslint:disable-next-line: forin
+          for (const label in items) {
+            allItems.push(...items[label]);
+          }
+          if (allItems.length) {
+            await Codap.createItems(dataContext.name, allItems);
+          }
         }
-        if (allItems.length) {
-          await Codap.createItems(dataContext.name, allItems);
-        }
+      }
+      else {
+        // synchronization of dataContext contents not yet implemented
       }
 
       // add collaborator name case if necessary
