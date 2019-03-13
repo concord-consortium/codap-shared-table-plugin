@@ -10,8 +10,8 @@ export async function initializePlugin(pluginName: string, version: string,
     dimensions: {width: number, height: number}) {
   const interfaceConfig = {
     name: pluginName,
-    version: version,
-    dimensions: dimensions
+    version,
+    dimensions
   };
   return await codapInterface.init(interfaceConfig);
 }
@@ -28,8 +28,8 @@ export function addDataContextChangeListener(context: DataContext, callback: () 
 
 export async function getAllDataContexts() {
   const result: CodapApiResponse = await codapInterface.sendRequest({
-    "action": "get",
-    "resource": "dataContextList"
+    action: "get",
+    resource: "dataContextList"
   });
   if (result && result.success) {
     return result.values as DataContext[];
@@ -42,7 +42,7 @@ export async function getAllDataContexts() {
 function incrementName(name: string) {
   if (/-(\d*)$/.test(name)) {
     const count = /-(\d*)$/.exec(name)![1];
-    const next = "" + (parseInt(count) + 1)
+    const next = "" + (parseInt(count, 10) + 1);
     return name.replace(/\d*$/, next);
   } else {
     return name + "-1";
@@ -104,7 +104,7 @@ export async function addNewCollaborationCollections(dataContextName: string, pe
       },
       attrs: [{name: "Name"}]
     },
-    {
+                                         {
       name: "Data",
       title: "Data",
       parent: "Collaborators",
@@ -126,12 +126,12 @@ export function openTable() {
 
 export function resizePlugin(width: number, height: number) {
   codapInterface.sendRequest({
-    "action": "update",
-    "resource": "interactiveFrame",
-    "values": {
-      "dimensions": {
-        "width": width,
-        "height": height
+    action: "update",
+    resource: "interactiveFrame",
+    values: {
+      dimensions: {
+        width,
+        height
       }
     }
   });
@@ -139,8 +139,8 @@ export function resizePlugin(width: number, height: number) {
 
 export async function getDataContext(dataContextName: string): Promise<DataContext | null> {
   const res = await codapInterface.sendRequest({
-    "action": "get",
-    "resource": `dataContext[${dataContextName}]`
+    action: "get",
+    resource: `dataContext[${dataContextName}]`
   });
   if (res.success) {
     return res.values;
@@ -150,8 +150,8 @@ export async function getDataContext(dataContextName: string): Promise<DataConte
 
 export async function getItemsOfCollaborator(dataContextName: string, name: string): Promise<any[]> {
   const res = await codapInterface.sendRequest({
-    "action": "get",
-    "resource": `dataContext[${dataContextName}].itemSearch[Name==${name}]`
+    action: "get",
+    resource: `dataContext[${dataContextName}].itemSearch[Name==${name}]`
   });
   if (res.success) {
     return res.values;
