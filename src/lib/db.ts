@@ -10,15 +10,25 @@ const config = {
 export class DB {
   shareRef?: firebase.database.Reference;
 
+  unregisterPresence?: () => void;
+
   constructor() {
     if (!firebase.apps.length) {
       firebase.initializeApp(config);
     }
   }
 
-  setShareId(shareId: string) {
+  joinSharedTable(shareId: string, userLabel: string) {
     const rootRef = firebase.database().ref();
     this.shareRef = rootRef.child(`shared-tables/${shareId}`);
+    this.registerPresence(userLabel);
+  }
+
+  leaveSharedTable() {
+    this.shareRef = undefined;
+    if (this.unregisterPresence) {
+      this.unregisterPresence();
+    }
   }
 
   // retrieves data from `shared-tables/${shareId}`
@@ -43,6 +53,19 @@ export class DB {
     const userItemsRef = itemsRef && itemsRef.child(userLabel);
     if (userItemsRef && items) {
       userItemsRef.set(items);
+    }
+  }
+
+  registerPresence(userLabel: string) {
+    const connectedRef = this.shareRef && this.shareRef.child("connectedUsers");
+    if (connectedRef) {
+      const userPresence = connectedRef.child(userLabel);
+      userPresence.set(Date.now());
+
+      this.unregisterPresence = () => {
+        userPresence.remove();
+      }
+      userPresence.onDisconnect().remove();
     }
   }
 
