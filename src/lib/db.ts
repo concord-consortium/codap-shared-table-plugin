@@ -21,6 +21,31 @@ export class DB {
     this.shareRef = rootRef.child(`shared-tables/${shareId}`);
   }
 
+  // retrieves data from `shared-tables/${shareId}`
+  async getAll() {
+    return this.shareRef && this.shareRef.once("value");
+  }
+
+  // retrieves data from `shared-tables/${shareId}/items`
+  async getAllItems() {
+    const itemsRef = this.shareRef && this.shareRef.child("items");
+    return itemsRef && itemsRef.once("value");
+  }
+
+  async getUserItems(userLabel: string) {
+    const itemsRef = this.shareRef && this.shareRef.child("items");
+    const userItemsRef = itemsRef && itemsRef.child(userLabel);
+    return userItemsRef && userItemsRef.once("value");
+  }
+
+  setUserItems(userLabel: string, items: any) {
+    const itemsRef = this.shareRef && this.shareRef.child("items");
+    const userItemsRef = itemsRef && itemsRef.child(userLabel);
+    if (userItemsRef && items) {
+      userItemsRef.set(items);
+    }
+  }
+
   // adds data at `shared-tables/${shareId}/${key}`
   set(key: string, data: any) {
     if (this.shareRef) {
