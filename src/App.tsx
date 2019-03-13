@@ -190,7 +190,7 @@ class App extends Component {
 
     const shareId = randomize("a0", 6, { exclude: "0oOiIlL1" });
     this.setState({shareId});
-    database.setShareId(shareId);
+    database.joinSharedTable(shareId, personalDataLabel);
 
     const updatedNewContext = await Codap.getDataContext(dataContextName);
     if (updatedNewContext) {
@@ -199,9 +199,9 @@ class App extends Component {
   }
 
   joinShare = async () => {
-    const shareId = this.state.joinShareId;
+    const {joinShareId: shareId, personalDataLabel} = this.state;
     this.setState({shareId});
-    database.setShareId(shareId);
+    database.joinSharedTable(shareId, personalDataLabel);
 
     const response = await database.getAll();
     const contextData = response && response.val();
@@ -252,6 +252,7 @@ class App extends Component {
       selectedDataContext: kNewSharedTable,
       personalDataLabel: ""
     });
+    database.leaveSharedTable();
   }
 }
 
