@@ -219,15 +219,19 @@ class App extends Component {
       await Codap.createDataContext(dataContext);
 
       // combine items from all users in a single array
-      const allItems = [];
-      // tslint:disable-next-line: forin
-      for (const label in items) {
-        allItems.push(...items[label]);
+      if (items) {
+        const allItems = [];
+        // tslint:disable-next-line: forin
+        for (const label in items) {
+          allItems.push(...items[label]);
+        }
+        if (allItems.length) {
+          await Codap.createItems(dataContext.name, allItems);
+        }
       }
-      await Codap.createItems(dataContext.name, allItems);
 
       // add collaborator name case if necessary
-      if (!items[this.state.personalDataLabel]) {
+      if (!items || !items[this.state.personalDataLabel]) {
         Codap.createUserCase(dataContext.name, this.state.personalDataLabel);
       }
 
