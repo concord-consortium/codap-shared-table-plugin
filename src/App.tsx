@@ -11,21 +11,21 @@ const kVersion = "0.0.1";
 const kInitialDimensions = {
   width: 350,
   height: 400
-}
+};
 const kSharedDimensions = {
   width: 350,
   height: 200
-}
+};
 
 const kNewSharedTable = "new-table";
 const kNewDataContextName = "collaborative-table";
 const kNewDataContextTitle = "Collaborative Table";
 
 interface IState {
-  availableDataContexts: DataContext[]
-  selectedDataContext: string
-  personalDataLabel: string
-  shareId?: string
+  availableDataContexts: DataContext[];
+  selectedDataContext: string;
+  personalDataLabel: string;
+  shareId?: string;
 }
 
 let database: DB;
@@ -123,7 +123,7 @@ class App extends Component {
           <button onClick={this.leaveShare}>Leave collaboration or join a different table</button>
         </div>
       </div>
-    )
+    );
   }
 
   updateAvailableDataContexts = async () => {
@@ -146,7 +146,7 @@ class App extends Component {
       const dataContext = await getDataContext(this.state.selectedDataContext);
       if (dataContext) {
         database.set("dataContext", dataContext);
-      };
+      }
 
       const items = await getItemsOfCollaborator(this.state.selectedDataContext, this.state.personalDataLabel);
       database.set(`items/${this.state.personalDataLabel}`, items);

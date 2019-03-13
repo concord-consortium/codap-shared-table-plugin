@@ -1,7 +1,7 @@
 import * as firebase from "firebase/app";
 import "firebase/database";
 
-var config = {
+const config = {
   apiKey: "AIzaSyASCGi9fWCUX3orJVB9d6svJbxDHfSRJVA",
   authDomain: "codap-shared-table-plugin.firebaseapp.com",
   databaseURL: "https://codap-shared-table-plugin.firebaseio.com"
