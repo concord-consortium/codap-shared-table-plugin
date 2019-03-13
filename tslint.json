@@ -1,6 +1,10 @@
 {
   "extends": ["tslint:recommended", "tslint-react"],
+  "linterOptions": {
+    "exclude": ["src/lib/CodapInterface.ts"]
+  },
   "rules": {
+    "align": [true, "statements", "members", "elements"],
     "arrow-parens": false,
     "curly": [true, "ignore-same-line"],
     "interface-name" : false,
@@ -9,6 +13,7 @@
     "jsx-no-multiline-js": false,
     "jsx-wrap-multiline": false,
     "max-classes-per-file": false,
+    "member-access": false,
     "no-console": false,
     "no-debugger": false,
     "no-empty-interface": false,
@@ -17,6 +22,8 @@
     "object-literal-sort-keys": false,
     "one-line": false,
     "ordered-imports": false,
+    "quotemark": false,
+    "semicolon": true,
     "trailing-comma": false,
     "variable-name": [true, "ban-keywords", "check-format", "allow-pascal-case", "allow-leading-underscore"]
   }
