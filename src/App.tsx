@@ -26,6 +26,7 @@ interface IState {
   personalDataLabel: string;
   shareId?: string;
   joinShareId: string;
+  showJoinShareError: boolean;
 }
 
 let database: DB;
@@ -36,7 +37,8 @@ class App extends Component {
     availableDataContexts: [],
     selectedDataContext: kNewSharedTable,
     personalDataLabel: "",
-    joinShareId: ""
+    joinShareId: "",
+    showJoinShareError: false
   };
 
   public componentDidMount() {
@@ -100,6 +102,16 @@ class App extends Component {
             </div>
           </li>
         </ol>
+        {this.renderErrorMessage()}
+      </div>
+    );
+  }
+
+  renderErrorMessage() {
+    if (!this.state.showJoinShareError) return null;
+    return (
+      <div className="error-message">
+        Failed to join designated share. Please check the code and try again.
       </div>
     );
   }
@@ -168,7 +180,7 @@ class App extends Component {
   }
 
   updateJoinShareId = (event: ChangeEvent<HTMLInputElement>) => {
-    this.setState({joinShareId: event.target.value});
+    this.setState({joinShareId: event.target.value, showJoinShareError: false});
   }
 
   initiateShare = async () => {
@@ -193,7 +205,7 @@ class App extends Component {
 
     const shareId = randomize("a0", 6, { exclude: "0oOiIlL1" });
     this.setState({shareId});
-    database.joinSharedTable(shareId, personalDataLabel);
+    database.createSharedTable(shareId, personalDataLabel);
 
     const updatedNewContext = await Codap.getDataContext(dataContextName);
     if (updatedNewContext) {
@@ -203,8 +215,12 @@ class App extends Component {
 
   joinShare = async () => {
     const {joinShareId: shareId, personalDataLabel} = this.state;
+
+    if (!await database.joinSharedTable(shareId, personalDataLabel)) {
+      this.setState({ showJoinShareError: true });
+      return;
+    }
     this.setState({shareId});
-    database.joinSharedTable(shareId, personalDataLabel);
 
     const response = await database.getAll();
     const contextData = response && response.val();
