@@ -1,4 +1,4 @@
-import codapInterface, { CodapApiResponse } from "./CodapInterface";
+import codapInterface, { CodapApiResponse, ClientHandler } from "./CodapInterface";
 
 export interface DataContext {
   name: string;
@@ -21,11 +21,11 @@ export class CodapHelper {
     return await codapInterface.init(interfaceConfig);
   }
 
-  static addDataContextsListListener(callback: () => void) {
+  static addDataContextsListListener(callback: ClientHandler) {
     codapInterface.on("notify", "documentChangeNotice", callback);
   }
 
-  static addDataContextChangeListener(context: DataContext, callback: () => void) {
+  static addDataContextChangeListener(context: DataContext, callback: ClientHandler) {
     codapInterface.on("notify", `dataContextChangeNotice[${context.name}]`, callback);
   }
 
