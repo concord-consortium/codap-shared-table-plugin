@@ -96,6 +96,13 @@ export interface CodapApiResponse {
  */
 var interactiveState = {};
 
+export interface ClientNotification {
+  action: string;
+  resource: string;
+  values: any;
+}
+export type ClientHandler = (notification: ClientNotification) => void;
+
 /**
  * A list of subscribers to messages from CODAP
  * @param {[{actionSpec: {RegExp}, resourceSpec: {RegExp}, handler: {function}}]}
@@ -356,7 +363,7 @@ const codapInterface = {
    *   'move', 'resize', .... If not specified, all operations will be reported.
    * @param handler {Function} A handler to receive the notifications.
    */
-  on: function (actionSpec: string, resourceSpec: string, operation: string | (() => void), handler?: () => void) {
+  on: function (actionSpec: string, resourceSpec: string, operation: string | ClientHandler, handler?: ClientHandler) {
     var as = 'notify',
         rs,
         os,

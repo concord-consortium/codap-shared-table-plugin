@@ -1,8 +1,9 @@
 import React, { Component, ChangeEvent } from "react";
 import * as randomize from "randomatic";
 import { CodapHelper as Codap, DataContext} from "./lib/codap-helper";
-import "./App.css";
+import { ClientNotification } from "./lib/CodapInterface";
 import { DB } from "./lib/db";
+import "./App.css";
 
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = "0.0.1";
@@ -139,7 +140,9 @@ class App extends Component {
     this.setState({availableDataContexts: contexts});
   }
 
-  handleDataContextUpdate = async () => {
+  handleDataContextUpdate = async (notification: ClientNotification) => {
+    const { action, resource, values } = notification;
+
     this.updateAvailableDataContexts(); // existing dataContext name may have changed
 
     const { shareId, selectedDataContext, personalDataLabel } = this.state;
