@@ -18,10 +18,22 @@ export class DB {
     }
   }
 
-  joinSharedTable(shareId: string, userLabel: string) {
+  createSharedTable(shareId: string, userLabel: string) {
     const rootRef = firebase.database().ref();
     this.shareRef = rootRef.child(`shared-tables/${shareId}`);
     this.registerPresence(userLabel);
+  }
+
+  async joinSharedTable(shareId: string, userLabel: string) {
+    const rootRef = firebase.database().ref();
+    this.shareRef = rootRef.child(`shared-tables/${shareId}`);
+    const connectedUsers = await this.getConnectedUsers();
+    if (connectedUsers && connectedUsers.val()) {
+      this.registerPresence(userLabel);
+      return true;
+    }
+    this.shareRef = undefined;
+    return false;
   }
 
   leaveSharedTable() {
@@ -56,6 +68,11 @@ export class DB {
     }
   }
 
+  async getConnectedUsers() {
+    const connectedRef = this.shareRef && this.shareRef.child("connectedUsers");
+    return connectedRef && connectedRef.once("value");
+  }
+
   registerPresence(userLabel: string) {
     const connectedRef = this.shareRef && this.shareRef.child("connectedUsers");
     if (connectedRef) {
@@ -64,7 +81,7 @@ export class DB {
 
       this.unregisterPresence = () => {
         userPresence.remove();
-      }
+      };
       userPresence.onDisconnect().remove();
     }
   }

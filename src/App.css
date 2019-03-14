@@ -20,3 +20,7 @@
   font-size: 2em;
   letter-spacing: 2px;
 }
+
+.App .error-message {
+  color: red;
+}
