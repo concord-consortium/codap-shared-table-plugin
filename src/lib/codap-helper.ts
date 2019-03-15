@@ -29,7 +29,7 @@ export class CodapHelper {
     codapInterface.on("notify", `dataContextChangeNotice[${context.name}]`, callback);
   }
 
-  static async getAllDataContexts() {
+  static async getDataContextList() {
     const result: CodapApiResponse = await codapInterface.sendRequest({
       action: "get",
       resource: "dataContextList"
@@ -53,7 +53,7 @@ export class CodapHelper {
   }
 
   static async createUniqueDataContext(dataContextPrefix: string, title: string) {
-    const contexts = await this.getAllDataContexts();
+    const contexts = await this.getDataContextList();
     const contextNames: string[] = contexts.map((c: DataContext) => c.name);
     let newDataContextName = dataContextPrefix;
     while (contextNames.indexOf(newDataContextName) > -1) {

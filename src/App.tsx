@@ -142,7 +142,7 @@ class App extends Component {
   }
 
   updateAvailableDataContexts = async () => {
-    const contexts = await Codap.getAllDataContexts();
+    const contexts = await Codap.getDataContextList();
     const existingListeners = this.state.availableDataContexts.map(c => c.name);
     contexts.forEach((dc) => {
       if (existingListeners.indexOf(dc.name) < 0) {
@@ -238,6 +238,7 @@ class App extends Component {
           }
         });
         await Codap.createDataContext(dataContext);
+        this.setState({ selectedDataContext: dataContext.name });
 
         // combine items from all users in a single array
         if (items) {
