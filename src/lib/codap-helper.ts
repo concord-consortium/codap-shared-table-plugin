@@ -1,4 +1,4 @@
-import codapInterface, { CodapApiResponse, ClientHandler } from "./CodapInterface";
+import codapInterface, { CodapApiResponse, ClientHandler, Collection } from "./CodapInterface";
 
 export interface DataContext {
   name: string;
@@ -77,7 +77,7 @@ export class CodapHelper {
     return res.success ? res.values : null;
   }
 
-  static async addCollections(dataContextName: string, collections: any[]) {
+  static async addCollections(dataContextName: string, collections: Collection[]) {
     await codapInterface.sendRequest({
       action: "create",
       resource: dataContextResource(dataContextName, "collection"),
@@ -103,24 +103,32 @@ export class CodapHelper {
     });
   }
 
-  static async addNewCollaborationCollections(dataContextName: string, personalDataLabel: string) {
-    await this.addCollections(dataContextName, [
+  static async addNewCollaborationCollections(dataContextName: string, personalDataLabel: string,
+      addEmptyDataCollection: boolean) {
+
+    const collections: Collection[] = [
       {
         name: "Collaborators",
         title: "List of collaborators",
+        parent: "_root_",
         labels: {
           singleCase: "name",
           pluralCase: "names"
         },
-        attrs: [{name: "Name"}]
-      },
-      {
+        attrs: [{name: "Name", editable: false}]
+      }
+    ];
+
+    if (addEmptyDataCollection) {
+      collections.push({
         name: "Data",
         title: "Data",
         parent: "Collaborators",
         attrs: [{name: "NewAttribute", editable: true}]
-      }
-    ]);
+      });
+    }
+
+    await this.addCollections(dataContextName, collections);
     await this.createUserCase(dataContextName, personalDataLabel);
   }
 
