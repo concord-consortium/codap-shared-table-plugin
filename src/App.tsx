@@ -193,14 +193,20 @@ class App extends Component {
       if (newContext) {
         dataContextName = newContext.name;
         this.setState({selectedDataContext: dataContextName});
-        await Codap.addNewCollaborationCollections(dataContextName, personalDataLabel);
+        await Codap.addNewCollaborationCollections(dataContextName, personalDataLabel, true);
         Codap.openTable(dataContextName);
       } else {
         throw new Error("failed to create new data context");
       }
     } else {
-      // only supporting new contexts right now
-      return;
+      const newContext = await Codap.getDataContext(selectedDataContext);
+      if (newContext) {
+        dataContextName = newContext.name;
+        this.setState({selectedDataContext: dataContextName});
+        await Codap.addNewCollaborationCollections(dataContextName, personalDataLabel, false);
+      } else {
+        throw new Error("failed to update data context");
+      }
     }
 
     const shareId = randomize("a0", 6, { exclude: "0oOiIlL1" });
