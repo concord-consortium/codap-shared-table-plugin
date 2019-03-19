@@ -167,9 +167,13 @@ class App extends Component {
         database.set("dataContext", dataContext);
       }
 
-      const items = await Codap.getItemsOfCollaborator(selectedDataContext, personalDataLabel);
-      database.setUserItems(personalDataLabel, items);
+      this.writeUserItems(selectedDataContext, personalDataLabel);
     }
+  }
+
+  async writeUserItems(selectedDataContext: string, personalDataLabel: string) {
+    const items = await Codap.getItemsOfCollaborator(selectedDataContext, personalDataLabel);
+    database.setUserItems(personalDataLabel, items);
   }
 
   updateSelectedDataContext = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -205,6 +209,7 @@ class App extends Component {
         dataContextName = newContext.name;
         this.setState({selectedDataContext: dataContextName});
         await Codap.addNewCollaborationCollections(dataContextName, personalDataLabel, false);
+        this.writeUserItems(selectedDataContext, personalDataLabel);
       } else {
         throw new Error("failed to update data context");
       }
@@ -221,7 +226,7 @@ class App extends Component {
   }
 
   joinShare = async () => {
-    const {joinShareId: shareId, personalDataLabel} = this.state;
+    const {joinShareId: shareId, personalDataLabel, selectedDataContext } = this.state;
 
     if (!await database.joinSharedTable(shareId, personalDataLabel)) {
       this.setState({ showJoinShareError: true });
@@ -233,7 +238,8 @@ class App extends Component {
     const contextData = response && response.val();
     if (contextData) {
       const { dataContext, items } = contextData;
-      const existingDataContext = await Codap.getDataContext(dataContext.name);
+      const existingDataContext = (selectedDataContext !== kNewSharedTable) &&
+                                   await Codap.getDataContext(selectedDataContext);
 
       if (!existingDataContext) {
         // fix parent references -- assumes collections are written out in order
@@ -246,26 +252,31 @@ class App extends Component {
         });
         await Codap.createDataContext(dataContext);
         this.setState({ selectedDataContext: dataContext.name });
+      }
+      else {
+        await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
+      }
 
-        // combine items from all users in a single array
-        if (items) {
-          const allItems = [];
-          // tslint:disable-next-line: forin
-          for (const label in items) {
-            allItems.push(...items[label]);
-          }
-          if (allItems.length) {
-            await Codap.createItems(dataContext.name, allItems);
-          }
+      // combine items from all users in a single array
+      if (items) {
+        const allItems = [];
+        // tslint:disable-next-line: forin
+        for (const label in items) {
+          allItems.push(...items[label]);
+        }
+        if (allItems.length) {
+          await Codap.createItems(dataContext.name, allItems);
+        }
+      }
+
+      if (!existingDataContext) {
+        // add collaborator name case if necessary
+        if (!items || !items[this.state.personalDataLabel]) {
+          Codap.createUserCase(dataContext.name, this.state.personalDataLabel);
         }
       }
       else {
-        // synchronization of dataContext contents not yet implemented
-      }
-
-      // add collaborator name case if necessary
-      if (!items || !items[this.state.personalDataLabel]) {
-        Codap.createUserCase(dataContext.name, this.state.personalDataLabel);
+        this.writeUserItems(selectedDataContext, personalDataLabel);
       }
 
       this.updateAvailableDataContexts();

@@ -78,11 +78,12 @@ export class CodapHelper {
   }
 
   static async addCollections(dataContextName: string, collections: Collection[]) {
-    await codapInterface.sendRequest({
+    const result = await codapInterface.sendRequest({
       action: "create",
       resource: dataContextResource(dataContextName, "collection"),
       values: collections
     });
+    return result && result.success ? result.values : null;
   }
 
   static async createUserCase(dataContextName: string, personalDataLabel: string) {
@@ -101,6 +102,14 @@ export class CodapHelper {
       resource: dataContextResource(dataContextName, "item"),
       values: items
     });
+  }
+
+  static async getItemCount(dataContextName: string) {
+    const result = await codapInterface.sendRequest({
+      action: "get",
+      resource: dataContextResource(dataContextName, `itemCount`)
+    });
+    return result && result.success ? result.values : null;
   }
 
   static async addNewCollaborationCollections(dataContextName: string, personalDataLabel: string,
@@ -129,7 +138,18 @@ export class CodapHelper {
     }
 
     await this.addCollections(dataContextName, collections);
-    await this.createUserCase(dataContextName, personalDataLabel);
+
+    const existingItemCount = await this.getItemCount(dataContextName);
+    if (existingItemCount > 0) {
+      await codapInterface.sendRequest({
+        action: "update",
+        resource: `dataContext[${dataContextName}].collection[${"Collaborators"}].caseByIndex[0]`,
+        values: { values: { Name: personalDataLabel } }
+      });
+    }
+    else {
+      await this.createUserCase(dataContextName, personalDataLabel);
+    }
   }
 
   static openTable(dataContextName: string) {
