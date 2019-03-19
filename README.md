@@ -1,4 +1,4 @@
-# Shared Tables CODAP Plugin
+# CODAP Shared Table Plugin
 
 ### Initial steps
 

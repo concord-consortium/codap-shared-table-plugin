@@ -1,6 +1,6 @@
 #!/bin/bash
 SRC_DIR='build'
-DISTRIBUTION_ID='E2JWFZUT1461ZF'
+DISTRIBUTION_ID='E3P78ES085CH6O'
 # name of branch to deploy to root of site
 PRODUCTION_BRANCH='production'
 
