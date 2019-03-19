@@ -1,6 +1,7 @@
 {
   "name": "codap-plugin-starter-project",
   "version": "0.1.0",
+  "homepage": ".",
   "dependencies": {
     "firebase": "^5.8.6",
     "iframe-phone": "^1.2.0",
