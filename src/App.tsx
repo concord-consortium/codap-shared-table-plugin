@@ -272,7 +272,7 @@ class App extends Component {
       if (!existingDataContext) {
         // add collaborator name case if necessary
         if (!items || !items[this.state.personalDataLabel]) {
-          Codap.createUserCase(dataContext.name, this.state.personalDataLabel);
+          Codap.configureUserCase(dataContext.name, this.state.personalDataLabel, true);
         }
       }
       else {

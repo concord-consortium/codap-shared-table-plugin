@@ -8,6 +8,8 @@ export interface DataContext {
 
 const dataContextResource = (contextName: string, subKey?: string) =>
                               `dataContext[${contextName}]${subKey ? "." + subKey : ""}`;
+const collaboratorsResource = (contextName: string, subKey: string) =>
+                                `dataContext[${contextName}].collection[Collaborators]${subKey}`;
 
 export class CodapHelper {
 
@@ -86,14 +88,22 @@ export class CodapHelper {
     return result && result.success ? result.values : null;
   }
 
-  static async createUserCase(dataContextName: string, personalDataLabel: string) {
-    await codapInterface.sendRequest({
-      action: "create",
-      resource: dataContextResource(dataContextName, "item"),
-      values: {
-        Name: personalDataLabel
-      }
-    });
+  static async configureUserCase(dataContextName: string, personalDataLabel: string, alwaysCreate = false) {
+    const existingItemCount = await this.getItemCount(dataContextName);
+    if (alwaysCreate || (existingItemCount === 0)) {
+      await codapInterface.sendRequest({
+        action: "create",
+        resource: collaboratorsResource(dataContextName, "case"),
+        values: [{ values: { Name: personalDataLabel } }]
+      });
+    }
+    else {
+      await codapInterface.sendRequest({
+        action: "update",
+        resource: collaboratorsResource(dataContextName, "caseByIndex[0]"),
+        values: { values: { Name: personalDataLabel } }
+      });
+    }
   }
 
   static async createItems(dataContextName: string, items: any) {
@@ -139,17 +149,7 @@ export class CodapHelper {
 
     await this.addCollections(dataContextName, collections);
 
-    const existingItemCount = await this.getItemCount(dataContextName);
-    if (existingItemCount > 0) {
-      await codapInterface.sendRequest({
-        action: "update",
-        resource: `dataContext[${dataContextName}].collection[${"Collaborators"}].caseByIndex[0]`,
-        values: { values: { Name: personalDataLabel } }
-      });
-    }
-    else {
-      await this.createUserCase(dataContextName, personalDataLabel);
-    }
+    await this.configureUserCase(dataContextName, personalDataLabel);
   }
 
   static openTable(dataContextName: string) {
