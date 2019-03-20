@@ -20,7 +20,6 @@ const kSharedDimensions = {
 const kShareIdLength = 6;
 
 const kNewSharedTable = "new-table";
-const kNewDataContextName = "collaborative-table";
 const kNewDataContextTitle = "Collaborative Table";
 
 interface IState {
@@ -65,7 +64,8 @@ class App extends Component {
   }
 
   renderForm() {
-    const { availableDataContexts, selectedDataContext, personalDataLabel, joinShareId, isInProcessOfSharing } = this.state;
+    const { availableDataContexts, selectedDataContext, personalDataLabel, joinShareId,
+            isInProcessOfSharing } = this.state;
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
@@ -203,7 +203,7 @@ class App extends Component {
     try {
       if (selectedDataContext === kNewSharedTable) {
         // create new data context for sharing
-        const newContext = await Codap.createUniqueDataContext(kNewDataContextName, kNewDataContextTitle);
+        const newContext = await Codap.createDataContext({title: kNewDataContextTitle});
         if (newContext) {
           dataContextName = newContext.name;
           this.setState({selectedDataContext: dataContextName});
@@ -250,25 +250,32 @@ class App extends Component {
       this.setState({shareId});
 
       const response = await database.getAll();
-      const contextData = response && response.val();
-      if (contextData) {
-        const { dataContext, items } = contextData;
+      const sharedContextData = response && response.val();
+      let ownDataContextName;
+      if (sharedContextData) {
+        const { dataContext: sharedDataContext, items } = sharedContextData;
         const existingDataContext = (selectedDataContext !== kNewSharedTable) &&
                                     await Codap.getDataContext(selectedDataContext);
 
         if (!existingDataContext) {
           // fix parent references -- assumes collections are written out in order
           const collectionNames: string[] = [];
-          dataContext.collections.forEach((collection: any, index: number) => {
+          sharedDataContext.collections.forEach((collection: any, index: number) => {
             collectionNames.push(collection.name);
             if (index > 0) {
               collection.parent = collectionNames[index - 1];
             }
           });
-          await Codap.createDataContext(dataContext);
-          this.setState({ selectedDataContext: dataContext.name });
+          const newDataContext = await Codap.createDataContext(sharedDataContext);
+          if (newDataContext) {
+            ownDataContextName = newDataContext.name;
+            this.setState({ selectedDataContext: ownDataContextName });
+          } else {
+            throw new Error("failed to create data context");
+          }
         }
         else {
+          ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
         }
 
@@ -280,14 +287,14 @@ class App extends Component {
             allItems.push(...items[label]);
           }
           if (allItems.length) {
-            await Codap.createItems(dataContext.name, allItems);
+            await Codap.createItems(ownDataContextName, allItems);
           }
         }
 
         if (!existingDataContext) {
           // add collaborator name case if necessary
           if (!items || !items[this.state.personalDataLabel]) {
-            Codap.configureUserCase(dataContext.name, this.state.personalDataLabel, true);
+            Codap.configureUserCase(ownDataContextName, this.state.personalDataLabel, true);
           }
         }
         else {
@@ -296,7 +303,7 @@ class App extends Component {
         }
 
         this.updateAvailableDataContexts();
-        Codap.openTable(dataContext.name);
+        Codap.openTable(ownDataContextName);
       }
     }
     finally {

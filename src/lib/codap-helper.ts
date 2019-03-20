@@ -1,9 +1,13 @@
+import * as randomize from "randomatic";
 import codapInterface, { CodapApiResponse, ClientHandler, Collection } from "./CodapInterface";
 
-export interface DataContext {
-  name: string;
+export interface DataContextCreation {
   title: string;
   collections?: any[];
+}
+
+export interface DataContext extends DataContextCreation {
+  name: string;
 }
 
 const dataContextResource = (contextName: string, subKey?: string) =>
@@ -42,36 +46,13 @@ export class CodapHelper {
     return [];
   }
 
-  // if passed "foo" returns "foo-1"
-  // if passed "foo-bar-23" returns "foo-bar-24"
-  static incrementName(name: string) {
-    if (/-(\d*)$/.test(name)) {
-      const count = /-(\d*)$/.exec(name)![1];
-      const next = "" + (parseInt(count, 10) + 1);
-      return name.replace(/\d*$/, next);
-    } else {
-      return name + "-1";
-    }
-  }
-
-  static async createUniqueDataContext(dataContextPrefix: string, title: string) {
-    const contexts = await this.getDataContextList();
-    const contextNames: string[] = contexts.map((c: DataContext) => c.name);
-    let newDataContextName = dataContextPrefix;
-    while (contextNames.indexOf(newDataContextName) > -1) {
-      newDataContextName = this.incrementName(newDataContextName);
-    }
-    const newContext = await this.createDataContext({ name: newDataContextName, title });
-    return newContext;
-  }
-
-  static async createDataContext(dataContextSpec: DataContext): Promise<DataContext | null> {
-    const { name, title, collections } = dataContextSpec;
+  static async createDataContext(dataContextSpec: DataContextCreation): Promise<DataContext | null> {
+    const { title, collections } = dataContextSpec;
     const res = await codapInterface.sendRequest({
       action: "create",
       resource: "dataContext",
       values: {
-        name,
+        name: randomize("a0", 10),
         title,
         collections: collections || []
       }
