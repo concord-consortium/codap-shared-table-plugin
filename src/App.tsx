@@ -3,10 +3,11 @@ import * as randomize from "randomatic";
 import { CodapHelper as Codap, DataContext} from "./lib/codap-helper";
 import { ClientNotification } from "./lib/CodapInterface";
 import { DB } from "./lib/db";
+const pkg = require("../package.json");
 import "./App.css";
 
 const kPluginName = "Collaborative Data Sharing";
-const kVersion = "0.0.1";
+const kVersion = pkg.version;
 const kInitialDimensions = {
   width: 350,
   height: 400
