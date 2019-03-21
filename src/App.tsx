@@ -17,6 +17,8 @@ const kSharedDimensions = {
   height: 200
 };
 
+const kShareIdLength = 6;
+
 const kNewSharedTable = "new-table";
 const kNewDataContextName = "collaborative-table";
 const kNewDataContextTitle = "Collaborative Table";
@@ -27,6 +29,7 @@ interface IState {
   personalDataLabel: string;
   shareId?: string;
   joinShareId: string;
+  isInProcessOfSharing: boolean;
   showJoinShareError: boolean;
 }
 
@@ -39,6 +42,7 @@ class App extends Component {
     selectedDataContext: kNewSharedTable,
     personalDataLabel: "",
     joinShareId: "",
+    isInProcessOfSharing: false,
     showJoinShareError: false
   };
 
@@ -61,11 +65,12 @@ class App extends Component {
   }
 
   renderForm() {
-    const availableContextOptions = this.state.availableDataContexts.map((dc: DataContext) =>
+    const { availableDataContexts, selectedDataContext, personalDataLabel, joinShareId, isInProcessOfSharing } = this.state;
+    const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
-    const readyToShare = !!this.state.personalDataLabel;
-    const readyToJoinShare = readyToShare && !!this.state.joinShareId;
+    const readyToInitiateShare = !!personalDataLabel && !isInProcessOfSharing;
+    const readyToJoinShare = readyToInitiateShare && (joinShareId.length === kShareIdLength);
 
     return (
       <div className="App">
@@ -74,7 +79,7 @@ class App extends Component {
           <li>
             Select a table to share <strong>or</strong> create a new one
             <div>
-              <select value={this.state.selectedDataContext} onChange={this.updateSelectedDataContext}>
+              <select value={selectedDataContext} onChange={this.updateSelectedDataContext}>
                 { availableContextOptions }
                 <option value={kNewSharedTable}>Create new table</option>
               </select>
@@ -83,21 +88,23 @@ class App extends Component {
           <li>
             Provide a name or label for grouping
             <div>
-              <input type="text" value={this.state.personalDataLabel} onChange={this.updateDataLabel} />
+              <input type="text" value={personalDataLabel} onChange={this.updateDataLabel} />
             </div>
           </li>
           <li>
             Invite others to join your table <strong>or</strong> join another group
             <div>
               <div>
-                <button onClick={this.initiateShare} disabled={!readyToShare}>Allow others to join your table</button>
+                <button onClick={this.initiateShare} disabled={!readyToInitiateShare}>
+                  Allow others to join your table
+                </button>
               </div>
               <div>
                 or
               </div>
               <div>
                 Enter code to join another group:
-                <input type="text" value={this.state.joinShareId} onChange={this.updateJoinShareId} />
+                <input type="text" value={joinShareId} onChange={this.updateJoinShareId} />
                 <button disabled={!readyToJoinShare} onClick={this.joinShare}>Join</button>
               </div>
             </div>
@@ -192,95 +199,107 @@ class App extends Component {
     const {selectedDataContext, personalDataLabel} = this.state;
     let dataContextName: string;
 
-    if (selectedDataContext === kNewSharedTable) {
-      // create new data context for sharing
-      const newContext = await Codap.createUniqueDataContext(kNewDataContextName, kNewDataContextTitle);
-      if (newContext) {
-        dataContextName = newContext.name;
-        this.setState({selectedDataContext: dataContextName});
-        await Codap.addNewCollaborationCollections(dataContextName, personalDataLabel, true);
-        Codap.openTable(dataContextName);
+    this.setState({ isInProcessOfSharing: true });
+    try {
+      if (selectedDataContext === kNewSharedTable) {
+        // create new data context for sharing
+        const newContext = await Codap.createUniqueDataContext(kNewDataContextName, kNewDataContextTitle);
+        if (newContext) {
+          dataContextName = newContext.name;
+          this.setState({selectedDataContext: dataContextName});
+          await Codap.addNewCollaborationCollections(dataContextName, personalDataLabel, true);
+          Codap.openTable(dataContextName);
+        } else {
+          throw new Error("failed to create new data context");
+        }
       } else {
-        throw new Error("failed to create new data context");
+        const newContext = await Codap.getDataContext(selectedDataContext);
+        if (newContext) {
+          dataContextName = newContext.name;
+          this.setState({selectedDataContext: dataContextName});
+          await Codap.addNewCollaborationCollections(dataContextName, personalDataLabel, false);
+          this.writeUserItems(selectedDataContext, personalDataLabel);
+        } else {
+          throw new Error("failed to update data context");
+        }
       }
-    } else {
-      const newContext = await Codap.getDataContext(selectedDataContext);
-      if (newContext) {
-        dataContextName = newContext.name;
-        this.setState({selectedDataContext: dataContextName});
-        await Codap.addNewCollaborationCollections(dataContextName, personalDataLabel, false);
-        this.writeUserItems(selectedDataContext, personalDataLabel);
-      } else {
-        throw new Error("failed to update data context");
+
+      const shareId = randomize("a0", kShareIdLength, { exclude: "0oOiIlL1" });
+      this.setState({shareId});
+      database.createSharedTable(shareId, personalDataLabel);
+
+      const updatedNewContext = await Codap.getDataContext(dataContextName);
+      if (updatedNewContext) {
+        database.set("dataContext", updatedNewContext);
       }
     }
-
-    const shareId = randomize("a0", 6, { exclude: "0oOiIlL1" });
-    this.setState({shareId});
-    database.createSharedTable(shareId, personalDataLabel);
-
-    const updatedNewContext = await Codap.getDataContext(dataContextName);
-    if (updatedNewContext) {
-      database.set("dataContext", updatedNewContext);
+    finally {
+      this.setState({ isInProcessOfSharing: false });
     }
   }
 
   joinShare = async () => {
     const {joinShareId: shareId, personalDataLabel, selectedDataContext } = this.state;
 
-    if (!await database.joinSharedTable(shareId, personalDataLabel)) {
-      this.setState({ showJoinShareError: true });
-      return;
-    }
-    this.setState({shareId});
+    this.setState({ isInProcessOfSharing: true });
+    try {
+      if (!await database.joinSharedTable(shareId, personalDataLabel)) {
+        this.setState({ showJoinShareError: true });
+        return;
+      }
+      this.setState({shareId});
 
-    const response = await database.getAll();
-    const contextData = response && response.val();
-    if (contextData) {
-      const { dataContext, items } = contextData;
-      const existingDataContext = (selectedDataContext !== kNewSharedTable) &&
-                                   await Codap.getDataContext(selectedDataContext);
+      const response = await database.getAll();
+      const contextData = response && response.val();
+      if (contextData) {
+        const { dataContext, items } = contextData;
+        const existingDataContext = (selectedDataContext !== kNewSharedTable) &&
+                                    await Codap.getDataContext(selectedDataContext);
 
-      if (!existingDataContext) {
-        // fix parent references -- assumes collections are written out in order
-        const collectionNames: string[] = [];
-        dataContext.collections.forEach((collection: any, index: number) => {
-          collectionNames.push(collection.name);
-          if (index > 0) {
-            collection.parent = collectionNames[index - 1];
+        if (!existingDataContext) {
+          // fix parent references -- assumes collections are written out in order
+          const collectionNames: string[] = [];
+          dataContext.collections.forEach((collection: any, index: number) => {
+            collectionNames.push(collection.name);
+            if (index > 0) {
+              collection.parent = collectionNames[index - 1];
+            }
+          });
+          await Codap.createDataContext(dataContext);
+          this.setState({ selectedDataContext: dataContext.name });
+        }
+        else {
+          await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
+        }
+
+        // combine items from all users in a single array
+        if (items) {
+          const allItems = [];
+          // tslint:disable-next-line: forin
+          for (const label in items) {
+            allItems.push(...items[label]);
           }
-        });
-        await Codap.createDataContext(dataContext);
-        this.setState({ selectedDataContext: dataContext.name });
-      }
-      else {
-        await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
-      }
-
-      // combine items from all users in a single array
-      if (items) {
-        const allItems = [];
-        // tslint:disable-next-line: forin
-        for (const label in items) {
-          allItems.push(...items[label]);
+          if (allItems.length) {
+            await Codap.createItems(dataContext.name, allItems);
+          }
         }
-        if (allItems.length) {
-          await Codap.createItems(dataContext.name, allItems);
-        }
-      }
 
-      if (!existingDataContext) {
-        // add collaborator name case if necessary
-        if (!items || !items[this.state.personalDataLabel]) {
-          Codap.configureUserCase(dataContext.name, this.state.personalDataLabel, true);
+        if (!existingDataContext) {
+          // add collaborator name case if necessary
+          if (!items || !items[this.state.personalDataLabel]) {
+            Codap.configureUserCase(dataContext.name, this.state.personalDataLabel, true);
+          }
         }
-      }
-      else {
-        this.writeUserItems(selectedDataContext, personalDataLabel);
-      }
+        else {
+          this.writeUserItems(selectedDataContext, personalDataLabel);
+        }
 
-      this.updateAvailableDataContexts();
-      Codap.openTable(dataContext.name);
+        this.updateAvailableDataContexts();
+        Codap.openTable(dataContext.name);
+      }
+    }
+    finally {
+      this.setState({ isInProcessOfSharing: false });
     }
   }
 
