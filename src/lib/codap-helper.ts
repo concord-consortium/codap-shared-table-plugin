@@ -9,7 +9,7 @@ export interface DataContext {
 const dataContextResource = (contextName: string, subKey?: string) =>
                               `dataContext[${contextName}]${subKey ? "." + subKey : ""}`;
 const collaboratorsResource = (contextName: string, subKey: string) =>
-                                `dataContext[${contextName}].collection[Collaborators]${subKey}`;
+                                `dataContext[${contextName}].collection[Collaborators].${subKey}`;
 
 export class CodapHelper {
 
