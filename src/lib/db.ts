@@ -1,5 +1,6 @@
 import * as firebase from "firebase/app";
 import "firebase/database";
+import { ClientItemsHandlers, FirebaseItemHandlers } from "./firebase-handlers";
 import { DataContext } from "./codap-helper";
 
 const config = {
@@ -41,25 +42,48 @@ function removeLocalDocumentIds(obj: any) {
 }
 
 export class DB {
+  userLabel?: string;
   shareRef?: firebase.database.Reference;
+  firebaseItemHandlers: { [user: string]: FirebaseItemHandlers } = {};
+  clientItemsHandlers: ClientItemsHandlers;
 
   unregisterPresence?: () => void;
 
-  constructor() {
+  constructor(clientHandlers: ClientItemsHandlers) {
     if (!firebase.apps.length) {
       firebase.initializeApp(config);
     }
+    this.clientItemsHandlers = clientHandlers;
+  }
+
+  setShareRef(shareId: string) {
+    const rootRef = firebase.database().ref();
+    this.shareRef = rootRef.child(`shared-tables/${shareId}`);
+  }
+
+  getConnectedUsersRef() {
+    return this.shareRef && this.shareRef.child("connectedUsers");
+  }
+
+  getItemsRef() {
+    return this.shareRef && this.shareRef.child("items");
+  }
+
+  getItemsRefForUser(user: string) {
+    const itemsRef = this.getItemsRef();
+    return itemsRef && itemsRef.child(user);
   }
 
   createSharedTable(shareId: string, userLabel: string) {
-    const rootRef = firebase.database().ref();
-    this.shareRef = rootRef.child(`shared-tables/${shareId}`);
+    this.userLabel = userLabel;
+    this.setShareRef(shareId);
+    this.installListeners();
     this.registerPresence(userLabel);
   }
 
   async joinSharedTable(shareId: string, userLabel: string) {
-    const rootRef = firebase.database().ref();
-    this.shareRef = rootRef.child(`shared-tables/${shareId}`);
+    this.userLabel = userLabel;
+    this.setShareRef(shareId);
     const connectedUsers = await this.getConnectedUsers();
     if (connectedUsers && connectedUsers.val()) {
       this.registerPresence(userLabel);
@@ -83,27 +107,46 @@ export class DB {
 
   // retrieves data from `shared-tables/${shareId}/items`
   async getAllItems() {
-    const itemsRef = this.shareRef && this.shareRef.child("items");
+    const itemsRef = this.getItemsRef();
     return itemsRef && itemsRef.once("value");
   }
 
   async getUserItems(userLabel: string) {
-    const itemsRef = this.shareRef && this.shareRef.child("items");
-    const userItemsRef = itemsRef && itemsRef.child(userLabel);
+    const userItemsRef = this.getItemsRefForUser(userLabel);
     return userItemsRef && userItemsRef.once("value");
   }
 
   setUserItems(userLabel: string, items: any) {
-    const itemsRef = this.shareRef && this.shareRef.child("items");
-    const userItemsRef = itemsRef && itemsRef.child(userLabel);
+    const userItemsRef = this.getItemsRefForUser(userLabel);
     if (userItemsRef && items) {
       userItemsRef.set(items);
     }
   }
 
   async getConnectedUsers() {
-    const connectedRef = this.shareRef && this.shareRef.child("connectedUsers");
+    const connectedRef = this.getConnectedUsersRef();
     return connectedRef && connectedRef.once("value");
+  }
+
+  installListeners() {
+    const connectedRef = this.getConnectedUsersRef();
+    connectedRef && connectedRef.on("child_added", userData => {
+      const user = userData && userData.key;
+      const userItemsRef = user ? this.getItemsRefForUser(user) : undefined;
+      if (user && userItemsRef && (user !== this.userLabel)) {
+        this.firebaseItemHandlers[user] = new FirebaseItemHandlers(user, userItemsRef, this.clientItemsHandlers);
+      }
+    });
+    connectedRef && connectedRef.on("child_removed", userData => {
+      const user = userData && userData.key;
+      if (user) {
+        const handlers = this.firebaseItemHandlers[user];
+        if (handlers) {
+          handlers.removeHandlers();
+          delete this.firebaseItemHandlers[user];
+        }
+      }
+    });
   }
 
   registerPresence(userLabel: string) {

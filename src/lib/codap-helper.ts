@@ -1,5 +1,6 @@
 import * as randomize from "randomatic";
 import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attribute } from "./CodapInterface";
+import { ClientItemValues } from "./firebase-handlers";
 
 export interface DataContextCreation {
   title: string;
@@ -125,6 +126,14 @@ export class CodapHelper {
     }
   }
 
+  static async getItemCount(dataContextName: string) {
+    const result = await codapInterface.sendRequest({
+      action: "get",
+      resource: dataContextResource(dataContextName, `itemCount`)
+    });
+    return result && result.success ? result.values : null;
+  }
+
   static async createItems(dataContextName: string, items: any) {
     await codapInterface.sendRequest({
       action: "create",
@@ -133,12 +142,41 @@ export class CodapHelper {
     });
   }
 
-  static async getItemCount(dataContextName: string) {
-    const result = await codapInterface.sendRequest({
-      action: "get",
-      resource: dataContextResource(dataContextName, `itemCount`)
+  static async createOrUpdateItems(dataContextName: string, itemValues: ClientItemValues[]) {
+    // Inefficient for batch updates, plus we'll probably eventually want to maintain
+    // an item ID map locally so we don't have to ask CODAP to determine existence.
+    const results = itemValues.map(async item => {
+      const itemResource = dataContextResource(dataContextName, `itemByID[${item.id}]`);
+      const hasCaseResult = await codapInterface.sendRequest({
+        action: "get",
+        resource: itemResource
+      });
+      if (hasCaseResult.success) {
+        return await codapInterface.sendRequest({
+          action: "update",
+          resource: itemResource,
+          values: item.values
+        });
+      }
+      else {
+        return await codapInterface.sendRequest({
+          action: "create",
+          resource: dataContextResource(dataContextName, "item"),
+          values: { id: item.id, values: item.values }
+        });
+      }
     });
-    return result && result.success ? result.values : null;
+    return (await Promise.all(results)).every(result => result.success);
+  }
+
+  static async removeItems(dataContextName: string, itemValues: ClientItemValues[]) {
+    const results = itemValues.map(async item => {
+      return await codapInterface.sendRequest({
+        action: "delete",
+        resource: dataContextResource(dataContextName, `itemByID[${item.id}]`)
+      });
+    });
+    return (await Promise.all(results)).every(result => result.success);
   }
 
   static async addNewCollaborationCollections(dataContextName: string, personalDataLabel: string,
@@ -310,7 +348,7 @@ export class CodapHelper {
     return [];
   }
 
-  static async getCaseForCollaborator(dataContextName: string, name: string): Promise<any> {
+  static async getCaseForCollaborator(dataContextName: string, name: string) {
     const res = await codapInterface.sendRequest({
       action: "get",
       resource: collaboratorsResource(dataContextName, `caseSearch[Name==${name}]`)
@@ -319,12 +357,22 @@ export class CodapHelper {
     return res.success && res.values && res.values.length ? res.values[0] : null;
   }
 
-  static async moveUserCaseToLast(dataContextName: string, name: string): Promise<boolean> {
-    const aCase = await this.getCaseForCollaborator(dataContextName, name);
-    if (aCase && aCase.id) {
+  static async getCollaboratorCases(dataContextName: string) {
+    const res = await codapInterface.sendRequest({
+      action: "get",
+      resource: collaboratorsResource(dataContextName, `caseSearch[*]`)
+    });
+    return res.success ? res.values : [];
+  }
+
+  static async moveUserCaseToLast(dataContextName: string, name: string) {
+    const cases: any[] = await this.getCollaboratorCases(dataContextName);
+    const selfIndex = cases.findIndex(aCase => aCase.values.Name === name);
+    const selfId = selfIndex >= 0 ? cases[selfIndex].id : undefined;
+    if (selfId && (selfIndex !== cases.length - 1)) {
       const res = await codapInterface.sendRequest({
         action: "notify",
-        resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
+        resource: collaboratorsResource(dataContextName, `caseByID[${selfId}]`),
         values: { caseOrder: "last" }
       });
       return res.success;
