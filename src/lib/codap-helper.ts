@@ -197,4 +197,26 @@ export class CodapHelper {
     }
     return [];
   }
+
+  static async getCaseForCollaborator(dataContextName: string, name: string): Promise<any> {
+    const res = await codapInterface.sendRequest({
+      action: "get",
+      resource: collaboratorsResource(dataContextName, `caseSearch[Name==${name}]`)
+    });
+    // there should be only one such case
+    return res.success && res.values && res.values.length ? res.values[0] : null;
+  }
+
+  static async moveUserCaseToLast(dataContextName: string, name: string): Promise<boolean> {
+    const aCase = await this.getCaseForCollaborator(dataContextName, name);
+    if (aCase && aCase.id) {
+      const res = await codapInterface.sendRequest({
+        action: "update",
+        resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
+        values: { caseOrder: "last" }
+      });
+      return res.success;
+    }
+    return false;
+  }
 }

@@ -291,6 +291,7 @@ class App extends Component {
           }
         }
         else {
+          Codap.moveUserCaseToLast(selectedDataContext, personalDataLabel);
           this.writeUserItems(selectedDataContext, personalDataLabel);
         }
 
