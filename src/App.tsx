@@ -270,6 +270,7 @@ class App extends Component {
         else {
           ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
+          await Codap.mergeDataContexts(selectedDataContext, sharedDataContext);
         }
 
         // combine items from all users in a single array

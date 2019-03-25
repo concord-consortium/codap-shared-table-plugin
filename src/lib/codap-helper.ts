@@ -1,5 +1,5 @@
 import * as randomize from "randomatic";
-import codapInterface, { CodapApiResponse, ClientHandler, Collection } from "./CodapInterface";
+import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attributes } from "./CodapInterface";
 
 export interface DataContextCreation {
   title: string;
@@ -9,6 +9,13 @@ export interface DataContextCreation {
 export interface DataContext extends DataContextCreation {
   name: string;
   collections: Collection[];
+}
+
+interface AttributeMeta {
+  name: string;
+  collection: string;
+  index: number;
+  attr: Attributes;
 }
 
 const dataContextResource = (contextName: string, subKey?: string) =>
@@ -153,6 +160,100 @@ export class CodapHelper {
     await this.addCollections(dataContextName, collections);
 
     await this.configureUserCase(dataContextName, personalDataLabel);
+  }
+
+  /**
+   * Takes an existing dataContext and an incoming shared dataContext, and performs the necessary CODAP
+   * requests to transform the existing to match the incoming.
+   *
+   * In particular, we need to account for the case where both tables may contain an attribute with the
+   * same name, but the latter has been moved to a new/different collection.
+   *
+   * If there are any attributes and collections in the existing dataContext that are not in the shares,
+   * this will leave them alone, thus merging both dataContexts together.
+   *
+   * [Upcoming, this function will take a "delete" flag that will delete collections/attributes in
+   * the existing DC that aren't in the new, for synchronization between two already-shared DCs]
+   */
+  static async mergeDataContexts(existingDataContextName: string, sharedDataContext: DataContext) {
+    const dataContext = await this.getDataContext(existingDataContextName);
+    if (dataContext) {
+      // first run through both DCs and gather the attribute details for each
+      const originalAttributes: AttributeMeta[] = [];
+      const sharedAttributes: AttributeMeta[] = [];
+
+      dataContext.collections.forEach(collection => {
+        collection.attrs.forEach((attr, i) => {
+          originalAttributes.push({name: attr.name, collection: collection.name, index: i, attr});
+        });
+      });
+
+      sharedDataContext.collections.forEach(collection => {
+        collection.attrs.forEach((attr, i) => {
+          sharedAttributes.push({name: attr.name, collection: collection.name, index: i, attr});
+        });
+      });
+
+      // If we have any new collections, create them in our existing DC without attributes
+      const newCollections = sharedDataContext.collections.filter(collA => {
+        return !dataContext.collections.some(collB => collA.name === collB.name);
+      });
+
+      if (newCollections.length > 0) {
+        newCollections.forEach(collection => collection.attrs = []);
+        await this.addCollections(existingDataContextName, newCollections);
+      }
+
+      // then create any new attributes as necessary
+      const newAttributes = sharedAttributes.filter(attrA => {
+        return !originalAttributes.some(attrB => attrA.name === attrB.name);
+      });
+
+      if (newAttributes.length > 0) {
+        const attributeCreationCommands: any[] = [];
+        // list of unique collections the new attributes belong to
+        const collectionsForNewAttributes = Array.from(new Set(newAttributes.map(a => a.collection)));
+        collectionsForNewAttributes.forEach(collectionName => {
+          // group the new attributes by collection and create a command to create all the new
+          // attributes for that collection
+          const newAttributesInCollection = newAttributes
+            .filter(a => a.collection === collectionName)
+            .map(a => a.attr);
+          attributeCreationCommands.push({
+            action: "create",
+            resource: dataContextResource(existingDataContextName, `collection[${collectionName}].attribute`),
+            values: newAttributesInCollection
+          });
+        });
+        // create all new attributes at once
+        await codapInterface.sendRequest(attributeCreationCommands);
+      }
+
+      // then move any existing attributes as necessary
+      const movedAttributes = originalAttributes.filter(attrA => {
+        const attrB = sharedAttributes.find(a => a.name === attrA.name);
+        return attrB && (attrA.collection !== attrB.collection || attrA.index !== attrB.index);
+      });
+
+      if (movedAttributes.length > 0) {
+        const attributeMoveCommands = movedAttributes.map(attr => {
+          const newLocation = sharedAttributes.find(a => a.name === attr.name);
+          if (newLocation) {
+            return {
+              action: "update",
+              // tslint:disable-next-line:max-line-length
+              resource: dataContextResource(existingDataContextName, `collection[${attr.collection}].attributeLocation[${attr.name}]`),
+              values: {
+                collection: newLocation.collection,
+                position: newLocation.index
+              }
+            };
+          }
+        });
+
+        await codapInterface.sendRequest(attributeMoveCommands);
+      }
+    }
   }
 
   static openTable(dataContextName: string) {
