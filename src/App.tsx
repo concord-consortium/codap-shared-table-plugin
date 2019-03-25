@@ -2,7 +2,7 @@ import React, { Component, ChangeEvent } from "react";
 import * as randomize from "randomatic";
 import { CodapHelper as Codap, DataContext} from "./lib/codap-helper";
 import { ClientNotification } from "./lib/CodapInterface";
-import { DB } from "./lib/db";
+import { DB, SharedTableEntry } from "./lib/db";
 const pkg = require("../package.json");
 import "./App.css";
 
@@ -251,7 +251,7 @@ class App extends Component {
       this.setState({shareId});
 
       const response = await database.getAll();
-      const sharedContextData = response && response.val();
+      const sharedContextData = response && response.val() as SharedTableEntry | undefined;
       let ownDataContextName;
       if (sharedContextData) {
         const { dataContext: sharedDataContext, items } = sharedContextData;
