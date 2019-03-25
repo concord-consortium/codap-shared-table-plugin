@@ -75,7 +75,14 @@ export class CodapHelper {
    * when we get the DC from CODAP, to be the names of the parent collections. These names can be used on
    * collection creation, and will survive sharing between documents.
    */
-  static getSharableDataContext(dataContext: DataContext) {
+  static async getSharableDataContext(_dataContext: DataContext | string) {
+    let dataContext;
+    if (typeof _dataContext === "string") {
+      dataContext = await this.getDataContext(_dataContext);
+      if (!dataContext) return;
+    } else {
+      dataContext = _dataContext;
+    }
     const sharableDataContext: DataContext = JSON.parse(JSON.stringify(dataContext));
     sharableDataContext.collections.forEach(collection => {
       const parentId = collection.parent;

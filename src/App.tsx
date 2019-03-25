@@ -230,7 +230,7 @@ class App extends Component {
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
       if (updatedNewContext) {
-        const sharableDataContext = Codap.getSharableDataContext(updatedNewContext);
+        const sharableDataContext = await Codap.getSharableDataContext(updatedNewContext);
         database.set("dataContext", sharableDataContext);
       }
     }
@@ -271,6 +271,9 @@ class App extends Component {
           ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
           await Codap.mergeDataContexts(selectedDataContext, sharedDataContext);
+
+          const sharableDataContext = await Codap.getSharableDataContext(selectedDataContext);
+          database.set("dataContext", sharableDataContext);
         }
 
         // combine items from all users in a single array
