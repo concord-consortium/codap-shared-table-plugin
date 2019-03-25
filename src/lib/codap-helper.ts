@@ -1,5 +1,5 @@
 import * as randomize from "randomatic";
-import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attributes } from "./CodapInterface";
+import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attribute } from "./CodapInterface";
 
 export interface DataContextCreation {
   title: string;
@@ -15,13 +15,15 @@ interface AttributeMeta {
   name: string;
   collection: string;
   index: number;
-  attr: Attributes;
+  attr: Attribute;
 }
 
 const dataContextResource = (contextName: string, subKey?: string) =>
                               `dataContext[${contextName}]${subKey ? "." + subKey : ""}`;
+const collectionResource = (contextName: string, collectionName: string, subKey?: string) =>
+                              `dataContext[${contextName}].collection[${collectionName}]${subKey ? "." + subKey : ""}`;
 const collaboratorsResource = (contextName: string, subKey: string) =>
-                                `dataContext[${contextName}].collection[Collaborators].${subKey}`;
+                              collectionResource(contextName, "Collaborators", subKey);
 
 export class CodapHelper {
 
@@ -248,8 +250,7 @@ export class CodapHelper {
           if (newLocation) {
             return {
               action: "update",
-              // tslint:disable-next-line:max-line-length
-              resource: dataContextResource(existingDataContextName, `collection[${attr.collection}].attributeLocation[${attr.name}]`),
+              resource: collectionResource(existingDataContextName, attr.collection, `attributeLocation[${attr.name}]`),
               values: {
                 collection: newLocation.collection,
                 position: newLocation.index
