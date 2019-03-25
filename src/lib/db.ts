@@ -7,6 +7,32 @@ const config = {
   databaseURL: "https://codap-shared-table-plugin.firebaseio.com"
 };
 
+/**
+ * Recursively traverses objects and arrays to remove any properties with
+ * the key `id` or `guid`. This mutates the original object.
+ *
+ * For objects such as DataContexts and Collections, these properties only make sense
+ * within the context of an individual's own CODAP document, and cause problems when
+ * shared between different documents.
+ *
+ * If the IDs are needed for references even across shares this function should not
+ * be used.
+ *
+ * @param obj
+ */
+function removeLocalDocumentIds(obj: any) {
+  if (!obj) return;
+  if (Array.isArray(obj)) {
+    obj.forEach(removeLocalDocumentIds);
+  } else if (typeof obj === "object") {
+    delete obj.id;
+    delete obj.guid;
+    for (const prop of Object.keys(obj)) {
+      removeLocalDocumentIds(obj[prop]);
+    }
+  }
+}
+
 export class DB {
   shareRef?: firebase.database.Reference;
 
@@ -89,6 +115,7 @@ export class DB {
   // adds data at `shared-tables/${shareId}/${key}`
   set(key: string, data: any) {
     if (this.shareRef) {
+      removeLocalDocumentIds(data);
       this.shareRef.child(key).set(data);
     }
   }
