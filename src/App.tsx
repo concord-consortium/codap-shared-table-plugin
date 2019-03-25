@@ -242,6 +242,8 @@ class App extends Component {
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
       this.writeDataContext(updatedNewContext);
+
+      database.addListener("dataContext", this.synchronizeDataContext);
     }
     finally {
       this.setState({ isInProcessOfSharing: false });
@@ -298,6 +300,8 @@ class App extends Component {
           this.writeUserItems(selectedDataContext, personalDataLabel);
         }
 
+        database.addListener("dataContext", this.synchronizeDataContext);
+
         this.updateAvailableDataContexts();
         Codap.openTable(ownDataContextName);
       }
@@ -305,6 +309,10 @@ class App extends Component {
     finally {
       this.setState({ isInProcessOfSharing: false });
     }
+  }
+
+  synchronizeDataContext = (val: any) => {
+    Codap.syncDataContexts(this.state.selectedDataContext, val);
   }
 
   leaveShare = () => {

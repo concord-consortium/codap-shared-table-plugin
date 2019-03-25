@@ -2,6 +2,7 @@ import * as firebase from "firebase/app";
 import "firebase/database";
 import { ClientItemsHandlers, FirebaseItemHandlers } from "./firebase-handlers";
 import { DataContext } from "./codap-helper";
+import { string } from "prop-types";
 
 const config = {
   apiKey: "AIzaSyASCGi9fWCUX3orJVB9d6svJbxDHfSRJVA",
@@ -46,6 +47,7 @@ export class DB {
   shareRef?: firebase.database.Reference;
   firebaseItemHandlers: { [user: string]: FirebaseItemHandlers } = {};
   clientItemsHandlers: ClientItemsHandlers;
+  listeners: Array<{path: string; callback: (data: any) => void; }> = [];
 
   unregisterPresence?: () => void;
 
@@ -99,6 +101,10 @@ export class DB {
     if (this.unregisterPresence) {
       this.unregisterPresence();
     }
+    if (this.shareRef) {
+      this.listeners.forEach(listener => this.shareRef!.child(listener.path).off("value", listener.callback));
+    }
+    this.shareRef = undefined;
   }
 
   // retrieves data from `shared-tables/${shareId}`
@@ -172,11 +178,25 @@ export class DB {
     }
   }
 
-  // adds data at `shared-tables/${shareId}/${key}`
-  set(key: string, data: any) {
+  /**
+   * Listens to data at `shared-tables/${shareId}/${path}`
+   * Listeners will be removed on leaveSharedTable
+   */
+  addListener(path: string, callback: (data: any) => void) {
+    if (this.shareRef) {
+      this.listeners.push({path, callback});
+      this.shareRef.child(path).on("value", (response) => {
+        const val = response && response.val();
+        callback(val);
+      });
+    }
+  }
+
+  // adds data at `shared-tables/${shareId}/${path}`
+  set(path: string, data: any) {
     if (this.shareRef) {
       removeLocalDocumentIds(data);
-      this.shareRef.child(key).set(data);
+      this.shareRef.child(path).set(data);
     }
   }
 }
