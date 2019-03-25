@@ -11,20 +11,24 @@ const config = {
  * Recursively traverses objects and arrays to remove any properties with
  * the key `id` or `guid`. This mutates the original object.
  *
- * These properties only make sense within the context of an individual's own
- * CODAP document, and cause problems when shared between different documents.
+ * For objects such as DataContexts and Collections, these properties only make sense
+ * within the context of an individual's own CODAP document, and cause problems when
+ * shared between different documents.
+ *
+ * If the IDs are needed for references even across shares this function should not
+ * be used.
  *
  * @param obj
  */
-function removeIds(obj: any) {
+function removeLocalDocumentIds(obj: any) {
   if (!obj) return;
   if (Array.isArray(obj)) {
-    obj.forEach(removeIds);
+    obj.forEach(removeLocalDocumentIds);
   } else if (typeof obj === "object") {
     delete obj.id;
     delete obj.guid;
     for (const prop of Object.keys(obj)) {
-      removeIds(obj[prop]);
+      removeLocalDocumentIds(obj[prop]);
     }
   }
 }
@@ -111,7 +115,7 @@ export class DB {
   // adds data at `shared-tables/${shareId}/${key}`
   set(key: string, data: any) {
     if (this.shareRef) {
-      removeIds(data);
+      removeLocalDocumentIds(data);
       this.shareRef.child(key).set(data);
     }
   }
