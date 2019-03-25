@@ -230,7 +230,8 @@ class App extends Component {
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
       if (updatedNewContext) {
-        database.set("dataContext", updatedNewContext);
+        const sharableDataContext = Codap.getSharableDataContext(updatedNewContext);
+        database.set("dataContext", sharableDataContext);
       }
     }
     finally {
@@ -258,14 +259,6 @@ class App extends Component {
                                     await Codap.getDataContext(selectedDataContext);
 
         if (!existingDataContext) {
-          // fix parent references -- assumes collections are written out in order
-          const collectionNames: string[] = [];
-          sharedDataContext.collections.forEach((collection: any, index: number) => {
-            collectionNames.push(collection.name);
-            if (index > 0) {
-              collection.parent = collectionNames[index - 1];
-            }
-          });
           const newDataContext = await Codap.createDataContext(sharedDataContext);
           if (newDataContext) {
             ownDataContextName = newDataContext.name;

@@ -3,11 +3,12 @@ import codapInterface, { CodapApiResponse, ClientHandler, Collection } from "./C
 
 export interface DataContextCreation {
   title: string;
-  collections?: any[];
+  collections?: Collection[];
 }
 
 export interface DataContext extends DataContextCreation {
   name: string;
+  collections: Collection[];
 }
 
 const dataContextResource = (contextName: string, subKey?: string) =>
@@ -58,6 +59,27 @@ export class CodapHelper {
       }
     });
     return res.success ? res.values : null;
+  }
+
+  /**
+   * This returns a copy of a data context specification that is prepped for sharing.
+   *
+   * Currently the only difference is that we replace all the collection parent references, which are ids
+   * when we get the DC from CODAP, to be the names of the parent collections. These names can be used on
+   * collection creation, and will survive sharing between documents.
+   */
+  static getSharableDataContext(dataContext: DataContext) {
+    const sharableDataContext: DataContext = JSON.parse(JSON.stringify(dataContext));
+    sharableDataContext.collections.forEach(collection => {
+      const parentId = collection.parent;
+      if (parentId) {
+        const parent = sharableDataContext.collections.find(c => c.id === parentId);
+        if (parent) {
+          collection.parent = parent.name;
+        }
+      }
+    });
+    return sharableDataContext;
   }
 
   static async addCollections(dataContextName: string, collections: Collection[]) {

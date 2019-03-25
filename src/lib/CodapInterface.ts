@@ -111,7 +111,8 @@ export interface Attributes {
 export interface Collection {
   name: string;
   title: string;
-  parent?: string;
+  id?: number;
+  parent?: string | number;
   description?: string;
   labels?: {
     singleCase?: string;
