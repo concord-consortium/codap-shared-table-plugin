@@ -2,7 +2,7 @@ import React, { Component, ChangeEvent } from "react";
 import * as randomize from "randomatic";
 import { CodapHelper as Codap, DataContext} from "./lib/codap-helper";
 import { ClientNotification } from "./lib/CodapInterface";
-import { DB } from "./lib/db";
+import { DB, SharedTableEntry } from "./lib/db";
 const pkg = require("../package.json");
 import "./App.css";
 
@@ -230,7 +230,8 @@ class App extends Component {
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
       if (updatedNewContext) {
-        database.set("dataContext", updatedNewContext);
+        const sharableDataContext = await Codap.getSharableDataContext(updatedNewContext);
+        database.set("dataContext", sharableDataContext);
       }
     }
     finally {
@@ -250,7 +251,7 @@ class App extends Component {
       this.setState({shareId});
 
       const response = await database.getAll();
-      const sharedContextData = response && response.val();
+      const sharedContextData = response && response.val() as SharedTableEntry | undefined;
       let ownDataContextName;
       if (sharedContextData) {
         const { dataContext: sharedDataContext, items } = sharedContextData;
@@ -258,14 +259,6 @@ class App extends Component {
                                     await Codap.getDataContext(selectedDataContext);
 
         if (!existingDataContext) {
-          // fix parent references -- assumes collections are written out in order
-          const collectionNames: string[] = [];
-          sharedDataContext.collections.forEach((collection: any, index: number) => {
-            collectionNames.push(collection.name);
-            if (index > 0) {
-              collection.parent = collectionNames[index - 1];
-            }
-          });
           const newDataContext = await Codap.createDataContext(sharedDataContext);
           if (newDataContext) {
             ownDataContextName = newDataContext.name;
@@ -277,6 +270,10 @@ class App extends Component {
         else {
           ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
+          await Codap.mergeDataContexts(selectedDataContext, sharedDataContext);
+
+          const sharableDataContext = await Codap.getSharableDataContext(selectedDataContext);
+          database.set("dataContext", sharableDataContext);
         }
 
         // combine items from all users in a single array

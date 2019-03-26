@@ -1,11 +1,18 @@
 import * as firebase from "firebase/app";
 import "firebase/database";
+import { DataContext } from "./codap-helper";
 
 const config = {
   apiKey: "AIzaSyASCGi9fWCUX3orJVB9d6svJbxDHfSRJVA",
   authDomain: "codap-shared-table-plugin.firebaseapp.com",
   databaseURL: "https://codap-shared-table-plugin.firebaseio.com"
 };
+
+export interface SharedTableEntry {
+  connectedUsers: string[];
+  dataContext: DataContext;
+  items?: {[key: string]: any[]};
+}
 
 /**
  * Recursively traverses objects and arrays to remove any properties with

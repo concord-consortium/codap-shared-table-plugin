@@ -103,7 +103,7 @@ export interface ClientNotification {
 }
 export type ClientHandler = (notification: ClientNotification) => void;
 
-export interface Attributes {
+export interface Attribute {
   name: string;
   editable?: boolean;
 }
@@ -111,7 +111,8 @@ export interface Attributes {
 export interface Collection {
   name: string;
   title: string;
-  parent?: string;
+  id?: number;
+  parent?: string | number;
   description?: string;
   labels?: {
     singleCase?: string;
@@ -120,7 +121,7 @@ export interface Collection {
     setOfCases?: string;
     setOfCasesWithArticle?: string;
   },
-  attrs: Attributes[]
+  attrs: Attribute[]
 }
 
 /**
