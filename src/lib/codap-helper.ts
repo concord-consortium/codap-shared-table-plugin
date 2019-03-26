@@ -323,7 +323,7 @@ export class CodapHelper {
     const aCase = await this.getCaseForCollaborator(dataContextName, name);
     if (aCase && aCase.id) {
       const res = await codapInterface.sendRequest({
-        action: "update",
+        action: "notify",
         resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
         values: { caseOrder: "last" }
       });
