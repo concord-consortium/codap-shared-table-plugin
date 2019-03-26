@@ -312,7 +312,7 @@ class App extends Component {
   }
 
   synchronizeDataContext = (val: any) => {
-    Codap.syncDataContexts(this.state.selectedDataContext, val);
+    Codap.syncDataContexts(this.state.selectedDataContext, val, true);
   }
 
   leaveShare = () => {

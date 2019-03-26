@@ -229,7 +229,7 @@ export class CodapHelper {
    * [Upcoming, this function will take a "delete" flag that will delete collections/attributes in
    * the existing DC that aren't in the new, for synchronization between two already-shared DCs]
    */
-  static async syncDataContexts(existingDataContextName: string, sharedDataContext: DataContext) {
+  static async syncDataContexts(existingDataContextName: string, sharedDataContext: DataContext, doDelete = false) {
     const dataContext = await this.getDataContext(existingDataContextName);
 
     // we create a list of all commands needed to modify the DC, and then execute them all at once, to
@@ -317,6 +317,18 @@ export class CodapHelper {
           }
         }));
       }
+
+      if (doDelete) {
+        const staleAttributes = originalAttributes.filter(attrA => {
+          return !sharedAttributes.some(attrB => attrA.name === attrB.name);
+        });
+
+        Array.prototype.push.apply(changeCommands, staleAttributes.map(attr => ({
+          action: "delete",
+          resource: collectionResource(dataContext.name, attr.collection, `attribute[${attr.name}]`)
+        })));
+      }
+      await codapInterface.sendRequest(changeCommands);
     }
   }
 
