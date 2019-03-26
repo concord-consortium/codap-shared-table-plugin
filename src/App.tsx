@@ -279,7 +279,7 @@ class App extends Component {
         else {
           ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
-          await Codap.mergeDataContexts(selectedDataContext, sharedDataContext);
+          await Codap.syncDataContexts(selectedDataContext, sharedDataContext);
 
           this.writeDataContext(selectedDataContext);
         }

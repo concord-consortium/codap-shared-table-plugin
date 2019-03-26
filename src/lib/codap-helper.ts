@@ -229,9 +229,17 @@ export class CodapHelper {
    * [Upcoming, this function will take a "delete" flag that will delete collections/attributes in
    * the existing DC that aren't in the new, for synchronization between two already-shared DCs]
    */
-  static async mergeDataContexts(existingDataContextName: string, sharedDataContext: DataContext) {
+  static async syncDataContexts(existingDataContextName: string, sharedDataContext: DataContext) {
     const dataContext = await this.getDataContext(existingDataContextName);
     if (dataContext) {
+      // update title
+      if (dataContext.title !== sharedDataContext.title) {
+        await codapInterface.sendRequest({
+          action: "update",
+          resource: dataContextResource(dataContext.name),
+          values: { title: sharedDataContext.title }
+        });
+      }
       // first run through both DCs and gather the attribute details for each
       const originalAttributes: AttributeMeta[] = [];
       const sharedAttributes: AttributeMeta[] = [];
