@@ -287,7 +287,7 @@ class App extends Component {
         }
 
         // listeners must be added after data context is configured
-        database.installListeners();
+        database.installUserItemListeners();
 
         if (!existingDataContext) {
           // add collaborator name case if necessary

@@ -77,7 +77,7 @@ export class DB {
   createSharedTable(shareId: string, userLabel: string) {
     this.userLabel = userLabel;
     this.setShareRef(shareId);
-    this.installListeners();
+    this.installUserItemListeners();
     this.registerPresence(userLabel);
   }
 
@@ -94,6 +94,7 @@ export class DB {
   }
 
   leaveSharedTable() {
+    this.removeUserItemListeners();
     this.shareRef = undefined;
     if (this.unregisterPresence) {
       this.unregisterPresence();
@@ -128,7 +129,7 @@ export class DB {
     return connectedRef && connectedRef.once("value");
   }
 
-  installListeners() {
+  installUserItemListeners() {
     const connectedRef = this.getConnectedUsersRef();
     connectedRef && connectedRef.on("child_added", userData => {
       const user = userData && userData.key;
@@ -139,14 +140,23 @@ export class DB {
     });
     connectedRef && connectedRef.on("child_removed", userData => {
       const user = userData && userData.key;
-      if (user) {
-        const handlers = this.firebaseItemHandlers[user];
-        if (handlers) {
-          handlers.removeHandlers();
-          delete this.firebaseItemHandlers[user];
-        }
-      }
+      user && this.removeItemHandlersForUser(user);
     });
+  }
+
+  removeUserItemListeners() {
+    Object.keys(this.firebaseItemHandlers)
+          .forEach(user => this.removeItemHandlersForUser(user));
+  }
+
+  removeItemHandlersForUser(user: string) {
+    if (user) {
+      const handlers = this.firebaseItemHandlers[user];
+      if (handlers) {
+        handlers.removeHandlers();
+        delete this.firebaseItemHandlers[user];
+      }
+    }
   }
 
   registerPresence(userLabel: string) {
