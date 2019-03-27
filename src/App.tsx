@@ -269,6 +269,15 @@ class App extends Component {
                                     await Codap.getDataContext(selectedDataContext);
 
         if (!existingDataContext) {
+          // map parent collection names
+          const collectionNames: string[] = [];
+          (sharedDataContext.collections || [])
+            .forEach((collection, index) => {
+              collection && collectionNames.push(collection.name);
+              if (collection.parent) {
+                collection.parent = collectionNames[index - 1];
+              }
+            });
           const newDataContext = await Codap.createDataContext(sharedDataContext);
           if (newDataContext) {
             ownDataContextName = newDataContext.name;
