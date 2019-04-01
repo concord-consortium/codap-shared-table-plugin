@@ -231,10 +231,14 @@ export class CodapHelper {
    */
   static async syncDataContexts(existingDataContextName: string, sharedDataContext: DataContext) {
     const dataContext = await this.getDataContext(existingDataContextName);
+
+    // we create a list of all commands needed to modify the DC, and then execute them all at once, to
+    // prevent generating change events that are sent to Firebase before the DC is fully-updated
+    const changeCommands: any[] = [];
     if (dataContext) {
       // update title
       if (dataContext.title !== sharedDataContext.title) {
-        await codapInterface.sendRequest({
+        changeCommands.push({
           action: "update",
           resource: dataContextResource(dataContext.name),
           values: { title: sharedDataContext.title }
@@ -263,7 +267,11 @@ export class CodapHelper {
 
       if (newCollections.length > 0) {
         newCollections.forEach(collection => collection.attrs = []);
-        await this.addCollections(existingDataContextName, newCollections);
+        changeCommands.push({
+          action: "create",
+          resource: dataContextResource(existingDataContextName, "collection"),
+          values: newCollections
+        });
       }
 
       // then create any new attributes as necessary
@@ -272,7 +280,6 @@ export class CodapHelper {
       });
 
       if (newAttributes.length > 0) {
-        const attributeCreationCommands: any[] = [];
         // list of unique collections the new attributes belong to
         const collectionsForNewAttributes = Array.from(new Set(newAttributes.map(a => a.collection)));
         collectionsForNewAttributes.forEach(collectionName => {
@@ -281,14 +288,12 @@ export class CodapHelper {
           const newAttributesInCollection = newAttributes
             .filter(a => a.collection === collectionName)
             .map(a => a.attr);
-          attributeCreationCommands.push({
+          changeCommands.push({
             action: "create",
             resource: dataContextResource(existingDataContextName, `collection[${collectionName}].attribute`),
             values: newAttributesInCollection
           });
         });
-        // create all new attributes at once
-        await codapInterface.sendRequest(attributeCreationCommands);
       }
 
       // then move any existing attributes as necessary
@@ -298,7 +303,7 @@ export class CodapHelper {
       });
 
       if (movedAttributes.length > 0) {
-        const attributeMoveCommands = movedAttributes.map(attr => {
+        Array.prototype.push.apply(changeCommands, movedAttributes.map(attr => {
           const newLocation = sharedAttributes.find(a => a.name === attr.name);
           if (newLocation) {
             return {
@@ -310,9 +315,7 @@ export class CodapHelper {
               }
             };
           }
-        });
-
-        await codapInterface.sendRequest(attributeMoveCommands);
+        }));
       }
     }
   }
