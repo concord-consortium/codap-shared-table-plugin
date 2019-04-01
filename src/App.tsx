@@ -178,14 +178,16 @@ class App extends Component {
     if (shareId) {
       // update data context details
       // note, once we are sharing with other people, we will need to prevent echoes
-      const dataContext = await Codap.getDataContext(selectedDataContext);
-      if (dataContext) {
-        database.set("dataContext", dataContext);
-      }
+      this.writeDataContext(selectedDataContext);
 
       this.writeUserItems(selectedDataContext, personalDataLabel);
       Codap.moveUserCaseToLast(selectedDataContext, personalDataLabel);
     }
+  }
+
+  async writeDataContext(dataContext: DataContext | string | null) {
+    const sharableDataContext = dataContext && await Codap.getSharableDataContext(dataContext);
+    sharableDataContext && database.set("dataContext", sharableDataContext);
   }
 
   async writeUserItems(selectedDataContext: string, personalDataLabel: string) {
@@ -239,10 +241,7 @@ class App extends Component {
       database.createSharedTable(shareId, personalDataLabel);
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
-      if (updatedNewContext) {
-        const sharableDataContext = await Codap.getSharableDataContext(updatedNewContext);
-        database.set("dataContext", sharableDataContext);
-      }
+      this.writeDataContext(updatedNewContext);
     }
     finally {
       this.setState({ isInProcessOfSharing: false });
@@ -269,15 +268,6 @@ class App extends Component {
                                     await Codap.getDataContext(selectedDataContext);
 
         if (!existingDataContext) {
-          // map parent collection names
-          const collectionNames: string[] = [];
-          (sharedDataContext.collections || [])
-            .forEach((collection, index) => {
-              collection && collectionNames.push(collection.name);
-              if (collection.parent) {
-                collection.parent = collectionNames[index - 1];
-              }
-            });
           const newDataContext = await Codap.createDataContext(sharedDataContext);
           if (newDataContext) {
             ownDataContextName = newDataContext.name;
@@ -291,8 +281,7 @@ class App extends Component {
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
           await Codap.mergeDataContexts(selectedDataContext, sharedDataContext);
 
-          const sharableDataContext = await Codap.getSharableDataContext(selectedDataContext);
-          database.set("dataContext", sharableDataContext);
+          this.writeDataContext(selectedDataContext);
         }
 
         // listeners must be added after data context is configured
