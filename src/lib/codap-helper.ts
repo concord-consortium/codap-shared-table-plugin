@@ -1,5 +1,6 @@
 import * as randomize from "randomatic";
 import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attribute } from "./CodapInterface";
+import { ClientItemValues } from "./firebase-handlers";
 
 export interface DataContextCreation {
   title: string;
@@ -16,6 +17,11 @@ interface AttributeMeta {
   collection: string;
   index: number;
   attr: Attribute;
+}
+
+export interface CodapItem {
+  id: string;
+  values: { [prop: string]: any };
 }
 
 const dataContextResource = (contextName: string, subKey?: string) =>
@@ -125,6 +131,22 @@ export class CodapHelper {
     }
   }
 
+  static async getItemCount(dataContextName: string) {
+    const result = await codapInterface.sendRequest({
+      action: "get",
+      resource: dataContextResource(dataContextName, `itemCount`)
+    });
+    return result && result.success ? result.values : null;
+  }
+
+  static async getAllItems(dataContextName: string): Promise<CodapItem[] | null> {
+    const result = await codapInterface.sendRequest({
+      action: "get",
+      resource: dataContextResource(dataContextName, `itemSearch[*]`)
+    });
+    return result && result.success ? result.values : null;
+  }
+
   static async createItems(dataContextName: string, items: any) {
     await codapInterface.sendRequest({
       action: "create",
@@ -133,12 +155,33 @@ export class CodapHelper {
     });
   }
 
-  static async getItemCount(dataContextName: string) {
-    const result = await codapInterface.sendRequest({
-      action: "get",
-      resource: dataContextResource(dataContextName, `itemCount`)
-    });
-    return result && result.success ? result.values : null;
+  static async createOrUpdateItems(dataContextName: string, itemValues: ClientItemValues[]) {
+    // should eventually cache the IDs locally
+    const existingItems = await this.getAllItems(dataContextName);
+    const existingIdsArray = existingItems && existingItems.map(item => item.id);
+    const existingIdsSet = new Set(existingIdsArray || []);
+    const requests = itemValues.map(item => {
+                      return existingIdsSet.has(item.id)
+                        ? {
+                            action: "update",
+                            resource: dataContextResource(dataContextName, `itemByID[${item.id}]`),
+                            values: item.values
+                          }
+                        : {
+                            action: "create",
+                            resource: dataContextResource(dataContextName, "item"),
+                            values: { id: item.id, values: item.values }
+                          };
+                      });
+    return codapInterface.sendRequest(requests);
+  }
+
+  static async removeItems(dataContextName: string, itemValues: ClientItemValues[]) {
+    const requests = itemValues.map(item => ({
+            action: "delete",
+            resource: dataContextResource(dataContextName, `itemByID[${item.id}]`)
+          }));
+    return codapInterface.sendRequest(requests);
   }
 
   static async addNewCollaborationCollections(dataContextName: string, personalDataLabel: string,
@@ -310,7 +353,7 @@ export class CodapHelper {
     return [];
   }
 
-  static async getCaseForCollaborator(dataContextName: string, name: string): Promise<any> {
+  static async getCaseForCollaborator(dataContextName: string, name: string) {
     const res = await codapInterface.sendRequest({
       action: "get",
       resource: collaboratorsResource(dataContextName, `caseSearch[Name==${name}]`)
@@ -319,12 +362,22 @@ export class CodapHelper {
     return res.success && res.values && res.values.length ? res.values[0] : null;
   }
 
-  static async moveUserCaseToLast(dataContextName: string, name: string): Promise<boolean> {
-    const aCase = await this.getCaseForCollaborator(dataContextName, name);
-    if (aCase && aCase.id) {
+  static async getCollaboratorCases(dataContextName: string) {
+    const res = await codapInterface.sendRequest({
+      action: "get",
+      resource: collaboratorsResource(dataContextName, `caseSearch[*]`)
+    });
+    return res.success ? res.values : [];
+  }
+
+  static async moveUserCaseToLast(dataContextName: string, name: string) {
+    const cases: any[] = await this.getCollaboratorCases(dataContextName);
+    const selfIndex = cases.findIndex(aCase => aCase.values.Name === name);
+    const selfId = selfIndex >= 0 ? cases[selfIndex].id : undefined;
+    if (selfId && (selfIndex !== cases.length - 1)) {
       const res = await codapInterface.sendRequest({
         action: "notify",
-        resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
+        resource: collaboratorsResource(dataContextName, `caseByID[${selfId}]`),
         values: { caseOrder: "last" }
       });
       return res.success;
