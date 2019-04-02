@@ -19,6 +19,11 @@ interface AttributeMeta {
   attr: Attribute;
 }
 
+export interface CodapItem {
+  id: string;
+  values: { [prop: string]: any };
+}
+
 const dataContextResource = (contextName: string, subKey?: string) =>
                               `dataContext[${contextName}]${subKey ? "." + subKey : ""}`;
 const collectionResource = (contextName: string, collectionName: string, subKey?: string) =>
@@ -134,6 +139,14 @@ export class CodapHelper {
     return result && result.success ? result.values : null;
   }
 
+  static async getAllItems(dataContextName: string): Promise<CodapItem[] | null> {
+    const result = await codapInterface.sendRequest({
+      action: "get",
+      resource: dataContextResource(dataContextName, `itemSearch[*]`)
+    });
+    return result && result.success ? result.values : null;
+  }
+
   static async createItems(dataContextName: string, items: any) {
     await codapInterface.sendRequest({
       action: "create",
@@ -143,40 +156,32 @@ export class CodapHelper {
   }
 
   static async createOrUpdateItems(dataContextName: string, itemValues: ClientItemValues[]) {
-    // Inefficient for batch updates, plus we'll probably eventually want to maintain
-    // an item ID map locally so we don't have to ask CODAP to determine existence.
-    const results = itemValues.map(async item => {
-      const itemResource = dataContextResource(dataContextName, `itemByID[${item.id}]`);
-      const hasCaseResult = await codapInterface.sendRequest({
-        action: "get",
-        resource: itemResource
-      });
-      if (hasCaseResult.success) {
-        return await codapInterface.sendRequest({
-          action: "update",
-          resource: itemResource,
-          values: item.values
-        });
-      }
-      else {
-        return await codapInterface.sendRequest({
-          action: "create",
-          resource: dataContextResource(dataContextName, "item"),
-          values: { id: item.id, values: item.values }
-        });
-      }
-    });
-    return (await Promise.all(results)).every(result => result.success);
+    // should eventually cache the IDs locally
+    const existingItems = await this.getAllItems(dataContextName);
+    const existingIdsArray = existingItems && existingItems.map(item => item.id);
+    const existingIdsSet = new Set(existingIdsArray || []);
+    const requests = itemValues.map(item => {
+                      return existingIdsSet.has(item.id)
+                        ? {
+                            action: "update",
+                            resource: dataContextResource(dataContextName, `itemByID[${item.id}]`),
+                            values: item.values
+                          }
+                        : {
+                            action: "create",
+                            resource: dataContextResource(dataContextName, "item"),
+                            values: { id: item.id, values: item.values }
+                          };
+                      });
+    return codapInterface.sendRequest(requests);
   }
 
   static async removeItems(dataContextName: string, itemValues: ClientItemValues[]) {
-    const results = itemValues.map(async item => {
-      return await codapInterface.sendRequest({
-        action: "delete",
-        resource: dataContextResource(dataContextName, `itemByID[${item.id}]`)
-      });
-    });
-    return (await Promise.all(results)).every(result => result.success);
+    const requests = itemValues.map(item => ({
+            action: "delete",
+            resource: dataContextResource(dataContextName, `itemByID[${item.id}]`)
+          }));
+    return codapInterface.sendRequest(requests);
   }
 
   static async addNewCollaborationCollections(dataContextName: string, personalDataLabel: string,
