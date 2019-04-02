@@ -262,31 +262,15 @@ export class CodapHelper {
         sharedCollection.attrs && sharedCollection.attrs.forEach((attr, i) => {
           let collectionForAttribute = sharedCollection.name;
           let index = i;
-          if (!initialJoin && !dataContext.collections.some(coll => coll.name === collectionForAttribute)) {
-            // if it is not the initial share, we may not have the same collections. If so, we will
-            // be putting new attributes at the end of our last collection
+          if (!dataContext.collections.some(coll => coll.name === collectionForAttribute)) {
+            // We may not have the same collections. If so, we will
+            // put new attributes at the end of our last collection
             collectionForAttribute = lastCollectionName;
             index = 1000 + i;
           }
           sharedAttributes.push({name: attr.name, collection: collectionForAttribute, index, attr});
         });
       });
-
-      // On initial join, if we have any new collections, create them in our existing DC without attributes
-      if (initialJoin) {
-        const newCollections = sharedDataContext.collections.filter(collA => {
-          return !dataContext.collections.some(collB => collA.name === collB.name);
-        });
-
-        if (newCollections.length > 0) {
-          newCollections.forEach(collection => collection.attrs = []);
-          changeCommands.push({
-            action: "create",
-            resource: dataContextResource(existingDataContextName, "collection"),
-            values: newCollections
-          });
-        }
-      }
 
       // then create any new attributes as necessary
       const newAttributes = sharedAttributes.filter(attrA => {
@@ -308,29 +292,6 @@ export class CodapHelper {
             values: newAttributesInCollection
           });
         });
-      }
-
-      // then move any existing attributes as necessary
-      // we only do this on initial shere. After that, we keep user's own ordering and structure
-      if (initialJoin) {
-        const movedAttributes = originalAttributes.filter(attrA => {
-          const attrB = sharedAttributes.find(a => a.name === attrA.name);
-          return attrB && (attrA.collection !== attrB.collection || attrA.index !== attrB.index);
-        });
-
-        Array.prototype.push.apply(changeCommands, movedAttributes.map(attr => {
-          const newLocation = sharedAttributes.find(a => a.name === attr.name);
-          if (newLocation) {
-            return {
-              action: "update",
-              resource: collectionResource(existingDataContextName, attr.collection, `attributeLocation[${attr.name}]`),
-              values: {
-                collection: newLocation.collection,
-                position: newLocation.index
-              }
-            };
-          }
-        }));
       }
 
       // After initial join we allow destructive syncing
