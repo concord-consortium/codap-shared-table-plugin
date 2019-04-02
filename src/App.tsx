@@ -281,7 +281,7 @@ class App extends Component {
         else {
           ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
-          await Codap.syncDataContexts(selectedDataContext, sharedDataContext);
+          await Codap.syncDataContexts(selectedDataContext, sharedDataContext, true);
 
           this.writeDataContext(selectedDataContext);
         }
@@ -312,7 +312,7 @@ class App extends Component {
   }
 
   synchronizeDataContext = (val: any) => {
-    Codap.syncDataContexts(this.state.selectedDataContext, val, true);
+    Codap.syncDataContexts(this.state.selectedDataContext, val, false);
   }
 
   leaveShare = () => {
