@@ -235,7 +235,7 @@ export class CodapHelper {
     // we create a list of all commands needed to modify the DC, and then execute them all at once, to
     // prevent generating change events that are sent to Firebase before the DC is fully-updated
     const changeCommands: any[] = [];
-    if (dataContext) {
+    if (dataContext && sharedDataContext) {
       // update title
       if (dataContext.title !== sharedDataContext.title) {
         changeCommands.push({

@@ -6,6 +6,7 @@ import { ClientItemValues } from "./lib/firebase-handlers";
 import { DB, SharedTableEntry } from "./lib/db";
 const pkg = require("../package.json");
 import "./App.css";
+import { debounce } from "./lib/util";
 
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = pkg.version;
@@ -45,6 +46,12 @@ class App extends Component {
     isInProcessOfSharing: false,
     showJoinShareError: false
   };
+
+  // debounce so we don't send up partially-updated data contexts while syncing
+  writeDataContext = debounce(async (dataContext: DataContext | string | null) => {
+    const sharableDataContext = dataContext && await Codap.getSharableDataContext(dataContext);
+    sharableDataContext && database.set("dataContext", sharableDataContext);
+  }, 100);
 
   public componentDidMount() {
     Codap.initializePlugin(kPluginName, kVersion, kInitialDimensions)
@@ -183,11 +190,6 @@ class App extends Component {
       this.writeUserItems(selectedDataContext, personalDataLabel);
       Codap.moveUserCaseToLast(selectedDataContext, personalDataLabel);
     }
-  }
-
-  async writeDataContext(dataContext: DataContext | string | null) {
-    const sharableDataContext = dataContext && await Codap.getSharableDataContext(dataContext);
-    sharableDataContext && database.set("dataContext", sharableDataContext);
   }
 
   async writeUserItems(selectedDataContext: string, personalDataLabel: string) {
