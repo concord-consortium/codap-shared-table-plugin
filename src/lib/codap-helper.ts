@@ -39,6 +39,7 @@ export class CodapHelper {
       name: pluginName,
       version,
       preventDataContextReorg: false,
+      preventTopLevelReorg: true,
       dimensions
     };
     return await codapInterface.init(interfaceConfig);

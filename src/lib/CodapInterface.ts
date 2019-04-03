@@ -66,15 +66,21 @@ var stats = {
   timeCodapLastReq: (null as Date | null)
 };
 
+export interface IDimensions {
+  width: number;
+  height: number;
+}
+
 export interface IConfig {
   stateHandler?: (arg0: any) => void;
   customInteractiveStateHandler?: boolean;
   name?: string;
   title?: string;
   version?: string;
-  dimensions?: any;
+  dimensions?: IDimensions;
   preventBringToFront?: boolean;
   preventDataContextReorg?: boolean;
+  preventTopLevelReorg?: boolean;
 }
 
 var config: IConfig | null = null;
@@ -248,14 +254,7 @@ const codapInterface = {
       }
 
       var getFrameReq = {action: 'get', resource: 'interactiveFrame'};
-      var newFrame = {
-        name: iConfig.name,
-        title: iConfig.title,
-        version: iConfig.version,
-        dimensions: iConfig.dimensions,
-        preventBringToFront: iConfig.preventBringToFront,
-        preventDataContextReorg: iConfig.preventDataContextReorg
-      };
+      var { stateHandler, customInteractiveStateHandler, ...newFrame } = iConfig;
       var updateFrameReq = {
         action: 'update',
         resource: 'interactiveFrame',
@@ -268,7 +267,7 @@ const codapInterface = {
       connection = new IframePhoneRpcEndpoint(
           notificationHandler, "data-interactive", window.parent);
 
-      if (!config.customInteractiveStateHandler) {
+      if (!customInteractiveStateHandler) {
         this_.on('get', 'interactiveState', function () {
           return ({success: true, values: this_.getInteractiveState()});
         }.bind(this_));
