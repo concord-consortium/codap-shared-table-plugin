@@ -6,7 +6,7 @@ import { ClientItemValues } from "./lib/firebase-handlers";
 import { DB, SharedTableEntry } from "./lib/db";
 const pkg = require("../package.json");
 import "./App.css";
-import { debounce } from "./lib/util";
+import pDebounce from "p-debounce";
 
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = pkg.version;
@@ -48,7 +48,7 @@ class App extends Component {
   };
 
   // debounce so we don't send up partially-updated data contexts while syncing
-  writeDataContext = debounce(async (dataContext: DataContext | string | null) => {
+  writeDataContext = pDebounce(async (dataContext: DataContext | string | null) => {
     const sharableDataContext = dataContext && await Codap.getSharableDataContext(dataContext);
     sharableDataContext && database.set("dataContext", sharableDataContext);
   }, 100);
@@ -184,7 +184,6 @@ class App extends Component {
     const { shareId, selectedDataContext, personalDataLabel } = this.state;
     if (shareId) {
       // update data context details
-      // note, once we are sharing with other people, we will need to prevent echoes
       this.writeDataContext(selectedDataContext);
 
       this.writeUserItems(selectedDataContext, personalDataLabel);
@@ -243,7 +242,7 @@ class App extends Component {
       database.createSharedTable(shareId, personalDataLabel);
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
-      this.writeDataContext(updatedNewContext);
+      await this.writeDataContext(updatedNewContext);
 
       database.addListener("dataContext", this.synchronizeDataContext);
     }
@@ -284,8 +283,7 @@ class App extends Component {
           ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
           await Codap.syncDataContexts(selectedDataContext, sharedDataContext, true);
-
-          this.writeDataContext(selectedDataContext);
+          await this.writeDataContext(selectedDataContext);
         }
 
         // listeners must be added after data context is configured

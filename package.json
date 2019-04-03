@@ -5,6 +5,7 @@
   "dependencies": {
     "firebase": "^5.8.6",
     "iframe-phone": "^1.2.0",
+    "p-debounce": "^2.0.0",
     "randomatic": "^3.1.1",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
