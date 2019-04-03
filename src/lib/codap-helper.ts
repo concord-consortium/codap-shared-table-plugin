@@ -1,5 +1,5 @@
 import * as randomize from "randomatic";
-import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attribute } from "./CodapInterface";
+import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attribute, IConfig } from "./CodapInterface";
 import { ClientItemValues } from "./firebase-handlers";
 
 export interface DataContextCreation {
@@ -35,9 +35,11 @@ export class CodapHelper {
 
   static async initializePlugin(pluginName: string, version: string,
                           dimensions: {width: number, height: number}) {
-    const interfaceConfig = {
+    const interfaceConfig: IConfig = {
       name: pluginName,
       version,
+      preventDataContextReorg: false,
+      preventTopLevelReorg: true,
       dimensions
     };
     return await codapInterface.init(interfaceConfig);
