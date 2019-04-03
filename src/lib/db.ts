@@ -2,7 +2,6 @@ import * as firebase from "firebase/app";
 import "firebase/database";
 import { ClientItemsHandlers, FirebaseItemHandlers } from "./firebase-handlers";
 import { DataContext } from "./codap-helper";
-import { string } from "prop-types";
 
 const config = {
   apiKey: "AIzaSyASCGi9fWCUX3orJVB9d6svJbxDHfSRJVA",
@@ -97,7 +96,6 @@ export class DB {
 
   leaveSharedTable() {
     this.removeUserItemListeners();
-    this.shareRef = undefined;
     if (this.unregisterPresence) {
       this.unregisterPresence();
     }

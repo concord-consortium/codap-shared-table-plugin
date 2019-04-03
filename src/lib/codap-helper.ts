@@ -300,7 +300,7 @@ export class CodapHelper {
           return !sharedAttributes.some(attrB => attrA.name === attrB.name);
         });
 
-        Array.prototype.push.apply(changeCommands, staleAttributes.map(attr => ({
+        changeCommands.push(...staleAttributes.map(attr => ({
           action: "delete",
           resource: collectionResource(dataContext.name, attr.collection, `attribute[${attr.name}]`)
         })));

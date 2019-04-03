@@ -5,11 +5,10 @@
 export function debounce(fn: Function, time: number): Function {
   let timeout: NodeJS.Timeout;
 
-  return function() {
-    // @ts-ignore
-    const functionCall = () => fn.apply(this, arguments);
+  return (...args: any[]) => {
+    const functionCall = () => fn.apply(null, args);
 
     clearTimeout(timeout);
     timeout = setTimeout(functionCall, time);
-  }
+  };
 }
