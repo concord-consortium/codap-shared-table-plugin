@@ -229,34 +229,48 @@ export class CodapHelper {
    * [Upcoming, this function will take a "delete" flag that will delete collections/attributes in
    * the existing DC that aren't in the new, for synchronization between two already-shared DCs]
    */
-  static async mergeDataContexts(existingDataContextName: string, sharedDataContext: DataContext) {
+  static async syncDataContexts(existingDataContextName: string, sharedDataContext: DataContext, initialJoin: boolean) {
     const dataContext = await this.getDataContext(existingDataContextName);
-    if (dataContext) {
+
+    // we create a list of all commands needed to modify the DC, and then execute them all at once, to
+    // prevent generating change events that are sent to Firebase before the DC is fully-updated
+    const changeCommands: any[] = [];
+    if (dataContext && sharedDataContext) {
+      // update title
+      if (dataContext.title !== sharedDataContext.title) {
+        changeCommands.push({
+          action: "update",
+          resource: dataContextResource(dataContext.name),
+          values: { title: sharedDataContext.title }
+        });
+      }
+
       // first run through both DCs and gather the attribute details for each
       const originalAttributes: AttributeMeta[] = [];
       const sharedAttributes: AttributeMeta[] = [];
 
       dataContext.collections.forEach(collection => {
-        collection.attrs.forEach((attr, i) => {
+        collection.attrs && collection.attrs.forEach((attr, i) => {
           originalAttributes.push({name: attr.name, collection: collection.name, index: i, attr});
         });
       });
 
-      sharedDataContext.collections.forEach(collection => {
-        collection.attrs.forEach((attr, i) => {
-          sharedAttributes.push({name: attr.name, collection: collection.name, index: i, attr});
+      const lastCollectionName = dataContext.collections[dataContext.collections.length - 1].name;
+
+      sharedDataContext.collections.forEach(sharedCollection => {
+        // this is metadata for where each new or updated attributes needs to go.
+        sharedCollection.attrs && sharedCollection.attrs.forEach((attr, i) => {
+          let collectionForAttribute = sharedCollection.name;
+          let index = i;
+          if (!dataContext.collections.some(coll => coll.name === collectionForAttribute)) {
+            // We may not have the same collections. If so, we will
+            // put new attributes at the end of our last collection
+            collectionForAttribute = lastCollectionName;
+            index = 1000 + i;
+          }
+          sharedAttributes.push({name: attr.name, collection: collectionForAttribute, index, attr});
         });
       });
-
-      // If we have any new collections, create them in our existing DC without attributes
-      const newCollections = sharedDataContext.collections.filter(collA => {
-        return !dataContext.collections.some(collB => collA.name === collB.name);
-      });
-
-      if (newCollections.length > 0) {
-        newCollections.forEach(collection => collection.attrs = []);
-        await this.addCollections(existingDataContextName, newCollections);
-      }
 
       // then create any new attributes as necessary
       const newAttributes = sharedAttributes.filter(attrA => {
@@ -264,7 +278,6 @@ export class CodapHelper {
       });
 
       if (newAttributes.length > 0) {
-        const attributeCreationCommands: any[] = [];
         // list of unique collections the new attributes belong to
         const collectionsForNewAttributes = Array.from(new Set(newAttributes.map(a => a.collection)));
         collectionsForNewAttributes.forEach(collectionName => {
@@ -273,39 +286,26 @@ export class CodapHelper {
           const newAttributesInCollection = newAttributes
             .filter(a => a.collection === collectionName)
             .map(a => a.attr);
-          attributeCreationCommands.push({
+          changeCommands.push({
             action: "create",
             resource: dataContextResource(existingDataContextName, `collection[${collectionName}].attribute`),
             values: newAttributesInCollection
           });
         });
-        // create all new attributes at once
-        await codapInterface.sendRequest(attributeCreationCommands);
       }
 
-      // then move any existing attributes as necessary
-      const movedAttributes = originalAttributes.filter(attrA => {
-        const attrB = sharedAttributes.find(a => a.name === attrA.name);
-        return attrB && (attrA.collection !== attrB.collection || attrA.index !== attrB.index);
-      });
-
-      if (movedAttributes.length > 0) {
-        const attributeMoveCommands = movedAttributes.map(attr => {
-          const newLocation = sharedAttributes.find(a => a.name === attr.name);
-          if (newLocation) {
-            return {
-              action: "update",
-              resource: collectionResource(existingDataContextName, attr.collection, `attributeLocation[${attr.name}]`),
-              values: {
-                collection: newLocation.collection,
-                position: newLocation.index
-              }
-            };
-          }
+      // After initial join we allow destructive syncing
+      if (!initialJoin) {
+        const staleAttributes = originalAttributes.filter(attrA => {
+          return !sharedAttributes.some(attrB => attrA.name === attrB.name);
         });
 
-        await codapInterface.sendRequest(attributeMoveCommands);
+        changeCommands.push(...staleAttributes.map(attr => ({
+          action: "delete",
+          resource: collectionResource(dataContext.name, attr.collection, `attribute[${attr.name}]`)
+        })));
       }
+      await codapInterface.sendRequest(changeCommands);
     }
   }
 

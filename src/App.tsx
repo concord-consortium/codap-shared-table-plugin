@@ -6,6 +6,7 @@ import { ClientItemValues } from "./lib/firebase-handlers";
 import { DB, SharedTableEntry } from "./lib/db";
 const pkg = require("../package.json");
 import "./App.css";
+import pDebounce from "p-debounce";
 
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = pkg.version;
@@ -45,6 +46,12 @@ class App extends Component {
     isInProcessOfSharing: false,
     showJoinShareError: false
   };
+
+  // debounce so we don't send up partially-updated data contexts while syncing
+  writeDataContext = pDebounce(async (dataContext: DataContext | string | null) => {
+    const sharableDataContext = dataContext && await Codap.getSharableDataContext(dataContext);
+    sharableDataContext && database.set("dataContext", sharableDataContext);
+  }, 100);
 
   public componentDidMount() {
     Codap.initializePlugin(kPluginName, kVersion, kInitialDimensions)
@@ -177,17 +184,11 @@ class App extends Component {
     const { shareId, selectedDataContext, personalDataLabel } = this.state;
     if (shareId) {
       // update data context details
-      // note, once we are sharing with other people, we will need to prevent echoes
       this.writeDataContext(selectedDataContext);
 
       this.writeUserItems(selectedDataContext, personalDataLabel);
       Codap.moveUserCaseToLast(selectedDataContext, personalDataLabel);
     }
-  }
-
-  async writeDataContext(dataContext: DataContext | string | null) {
-    const sharableDataContext = dataContext && await Codap.getSharableDataContext(dataContext);
-    sharableDataContext && database.set("dataContext", sharableDataContext);
   }
 
   async writeUserItems(selectedDataContext: string, personalDataLabel: string) {
@@ -241,7 +242,9 @@ class App extends Component {
       database.createSharedTable(shareId, personalDataLabel);
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
-      this.writeDataContext(updatedNewContext);
+      await this.writeDataContext(updatedNewContext);
+
+      database.addListener("dataContext", this.synchronizeDataContext);
     }
     finally {
       this.setState({ isInProcessOfSharing: false });
@@ -279,9 +282,8 @@ class App extends Component {
         else {
           ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataLabel, false);
-          await Codap.mergeDataContexts(selectedDataContext, sharedDataContext);
-
-          this.writeDataContext(selectedDataContext);
+          await Codap.syncDataContexts(selectedDataContext, sharedDataContext, true);
+          await this.writeDataContext(selectedDataContext);
         }
 
         // listeners must be added after data context is configured
@@ -298,6 +300,8 @@ class App extends Component {
           this.writeUserItems(selectedDataContext, personalDataLabel);
         }
 
+        database.addListener("dataContext", this.synchronizeDataContext);
+
         this.updateAvailableDataContexts();
         Codap.openTable(ownDataContextName);
       }
@@ -305,6 +309,10 @@ class App extends Component {
     finally {
       this.setState({ isInProcessOfSharing: false });
     }
+  }
+
+  synchronizeDataContext = (val: any) => {
+    Codap.syncDataContexts(this.state.selectedDataContext, val, false);
   }
 
   leaveShare = () => {
