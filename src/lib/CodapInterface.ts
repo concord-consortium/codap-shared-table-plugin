@@ -66,15 +66,15 @@ var stats = {
   timeCodapLastReq: (null as Date | null)
 };
 
-interface IConfig {
+export interface IConfig {
   stateHandler?: (arg0: any) => void;
   customInteractiveStateHandler?: boolean;
-  name?: any;
-  title?: any;
-  version?: any;
+  name?: string;
+  title?: string;
+  version?: string;
   dimensions?: any;
-  preventBringToFront?: any;
-  preventDataContextReorg?: any;
+  preventBringToFront?: boolean;
+  preventDataContextReorg?: boolean;
 }
 
 var config: IConfig | null = null;
