@@ -11,6 +11,7 @@ const config = {
 
 export interface SharedTableEntry {
   connectedUsers: string[];
+  allUsers: string[];
   dataContext: DataContext;
   items?: {[key: string]: any[]};
 }
@@ -62,8 +63,8 @@ export class DB {
     this.shareRef = rootRef.child(`shared-tables/${shareId}`);
   }
 
-  getConnectedUsersRef() {
-    return this.shareRef && this.shareRef.child("connectedUsers");
+  getAllUsersRef() {
+    return this.shareRef && this.shareRef.child("allUsers");
   }
 
   getItemsRef() {
@@ -85,8 +86,8 @@ export class DB {
   async joinSharedTable(shareId: string, userLabel: string) {
     this.userLabel = userLabel;
     this.setShareRef(shareId);
-    const connectedUsers = await this.getConnectedUsers();
-    if (connectedUsers && connectedUsers.val()) {
+    const allUsers = await this.getAllUsers();
+    if (allUsers && allUsers.val()) {
       this.registerPresence(userLabel);
       return true;
     }
@@ -128,21 +129,21 @@ export class DB {
     }
   }
 
-  async getConnectedUsers() {
-    const connectedRef = this.getConnectedUsersRef();
-    return connectedRef && connectedRef.once("value");
+  async getAllUsers() {
+    const allUsersRef = this.getAllUsersRef();
+    return allUsersRef && allUsersRef.once("value");
   }
 
   installUserItemListeners() {
-    const connectedRef = this.getConnectedUsersRef();
-    connectedRef && connectedRef.on("child_added", userData => {
+    const allUsersRef = this.getAllUsersRef();
+    allUsersRef && allUsersRef.on("child_added", userData => {
       const user = userData && userData.key;
       const userItemsRef = user ? this.getItemsRefForUser(user) : undefined;
       if (user && userItemsRef && (user !== this.userLabel)) {
         this.firebaseItemHandlers[user] = new FirebaseItemHandlers(user, userItemsRef, this.clientItemsHandlers);
       }
     });
-    connectedRef && connectedRef.on("child_removed", userData => {
+    allUsersRef && allUsersRef.on("child_removed", userData => {
       const user = userData && userData.key;
       user && this.removeItemHandlersForUser(user);
     });
@@ -164,10 +165,13 @@ export class DB {
   }
 
   registerPresence(userLabel: string) {
+    const allUsersRef = this.shareRef && this.shareRef.child("allUsers");
     const connectedRef = this.shareRef && this.shareRef.child("connectedUsers");
-    if (connectedRef) {
+    if (allUsersRef && connectedRef) {
+      const time = Date.now();
+      allUsersRef.child(userLabel).set(time);
       const userPresence = connectedRef.child(userLabel);
-      userPresence.set(Date.now());
+      userPresence.set(time);
 
       this.unregisterPresence = () => {
         userPresence.remove();
