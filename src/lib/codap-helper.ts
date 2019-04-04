@@ -206,7 +206,7 @@ export class CodapHelper {
         },
         attrs: [
           {name: "Name", editable: false},
-          {name: kCollaboratorKey, editable: false}
+          {name: kCollaboratorKey, editable: false, hidden: true}
         ]
       }
     ];

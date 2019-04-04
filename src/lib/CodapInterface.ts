@@ -112,6 +112,7 @@ export type ClientHandler = (notification: ClientNotification) => void;
 export interface Attribute {
   name: string;
   editable?: boolean;
+  hidden?: boolean;
 }
 
 export interface Collection {
