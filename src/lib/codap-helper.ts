@@ -119,8 +119,13 @@ export class CodapHelper {
 
   static async configureUserCase(dataContextName: string, personalDataKey: string, personalDataLabel: string,
       alwaysCreate = false) {
-    const existingItemCount = await this.getItemCount(dataContextName);
-    if (alwaysCreate || (existingItemCount === 0)) {
+    // see if we have an existing case
+    const userCase = await codapInterface.sendRequest({
+      action: "get",
+      resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
+    });
+    const userCaseId = userCase && userCase.values && userCase.values[0] && userCase.values[0].id;
+    if (alwaysCreate || !userCaseId) {
       await codapInterface.sendRequest({
         action: "create",
         resource: collaboratorsResource(dataContextName, "case"),
@@ -133,7 +138,7 @@ export class CodapHelper {
     else {
       await codapInterface.sendRequest({
         action: "update",
-        resource: collaboratorsResource(dataContextName, "caseByIndex[0]"),
+        resource: collaboratorsResource(dataContextName, `caseByID[${userCaseId}]`),
         values: { values: { Name: personalDataLabel } }
       });
     }
