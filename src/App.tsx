@@ -29,6 +29,7 @@ interface IState {
   selectedDataContext: string;
   personalDataKey: string;
   personalDataLabel: string;
+  lastPersonalDataLabel: string;
   shareId?: string;
   joinShareId: string;
   isInProcessOfSharing: boolean;
@@ -44,6 +45,7 @@ class App extends Component {
     selectedDataContext: kNewSharedTable,
     personalDataKey: randomize("a0", 10),
     personalDataLabel: "",
+    lastPersonalDataLabel: "",
     joinShareId: "",
     isInProcessOfSharing: false,
     showJoinShareError: false
@@ -78,12 +80,12 @@ class App extends Component {
   }
 
   renderForm() {
-    const { availableDataContexts, selectedDataContext, personalDataLabel, joinShareId,
+    const { availableDataContexts, selectedDataContext, personalDataLabel, lastPersonalDataLabel, joinShareId,
             isInProcessOfSharing } = this.state;
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
-    const readyToInitiateShare = !!personalDataLabel && !isInProcessOfSharing;
+    const readyToInitiateShare = (!!personalDataLabel || !!lastPersonalDataLabel) && !isInProcessOfSharing;
     const readyToJoinShare = readyToInitiateShare && (joinShareId.length === kShareIdLength);
 
     return (
@@ -102,7 +104,8 @@ class App extends Component {
           <li>
             Provide a name or label for grouping
             <div>
-              <input type="text" value={personalDataLabel} onChange={this.updateDataLabel} />
+              <input type="text" value={personalDataLabel} placeholder={lastPersonalDataLabel}
+                onChange={this.updateDataLabel} />
             </div>
           </li>
           <li>
@@ -210,8 +213,29 @@ class App extends Component {
     this.setState({joinShareId: event.target.value, showJoinShareError: false});
   }
 
+  /**
+   * Should only be called after share is initiated or joined. This will shift over the lastPersonalDataLabel
+   * to the currentPersonalDataLabel if necessary, and this method will only return after state has been set,
+   * in case there are other functions after it that expect state.personalDataLabel to be up-to-date.
+   */
+  async getAndUpdatePersonalDataLabel() {
+    const {personalDataLabel, lastPersonalDataLabel } = this.state;
+
+    let currentPersonalDataLabel = personalDataLabel;
+    if (!currentPersonalDataLabel) {
+      currentPersonalDataLabel = lastPersonalDataLabel;
+      await new Promise((resolve) => {
+        this.setState({ personalDataLabel: currentPersonalDataLabel }, resolve);
+      });
+    }
+    this.setState({ lastPersonalDataLabel: currentPersonalDataLabel });
+    return currentPersonalDataLabel;
+  }
+
   initiateShare = async () => {
-    const {selectedDataContext, personalDataKey, personalDataLabel} = this.state;
+    const {selectedDataContext, personalDataKey } = this.state;
+    const personalDataLabel = await this.getAndUpdatePersonalDataLabel();
+
     let dataContextName: string;
 
     this.setState({ isInProcessOfSharing: true });
@@ -254,7 +278,8 @@ class App extends Component {
   }
 
   joinShare = async () => {
-    const {joinShareId: shareId, personalDataKey, personalDataLabel, selectedDataContext } = this.state;
+    const {joinShareId: shareId, personalDataKey, selectedDataContext } = this.state;
+    const personalDataLabel = await this.getAndUpdatePersonalDataLabel();
 
     this.setState({ isInProcessOfSharing: true });
     try {
@@ -322,7 +347,8 @@ class App extends Component {
     this.setState({
       shareId: null,
       selectedDataContext: kNewSharedTable,
-      personalDataLabel: ""
+      personalDataLabel: "",
+      joinShareId: ""
     });
     database.leaveSharedTable();
   }
