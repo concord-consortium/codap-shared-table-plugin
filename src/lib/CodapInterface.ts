@@ -78,9 +78,12 @@ export interface IConfig {
   title?: string;
   version?: string;
   dimensions?: IDimensions;
+  cannotClose?: boolean;
   preventBringToFront?: boolean;
   preventDataContextReorg?: boolean;
   preventTopLevelReorg?: boolean;
+  preventAttributeDeletion?: boolean;
+  allowEmptyAttributeDeletion?: boolean;
 }
 
 var config: IConfig | null = null;
@@ -112,6 +115,7 @@ export type ClientHandler = (notification: ClientNotification) => void;
 export interface Attribute {
   name: string;
   editable?: boolean;
+  deleteable?: boolean;
   hidden?: boolean;
 }
 

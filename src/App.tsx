@@ -277,6 +277,7 @@ class App extends Component {
       const shareId = randomize("a0", kShareIdLength, { exclude: "0oOiIlL1" });
       this.setState({shareId});
       database.createSharedTable(shareId, personalDataKey);
+      Codap.configureForSharing(true);
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
       await this.writeDataContext(updatedNewContext);
@@ -299,6 +300,7 @@ class App extends Component {
         return;
       }
       this.setState({shareId});
+      Codap.configureForSharing(true);
 
       const response = await database.getAll();
       const sharedContextData = response && response.val() as SharedTableEntry | undefined;
@@ -362,6 +364,7 @@ class App extends Component {
       joinShareId: ""
     });
     database.leaveSharedTable();
+    Codap.configureForSharing(false);
   }
 
   itemsAdded = async (user: string, items: ClientItemValues[]) => {
