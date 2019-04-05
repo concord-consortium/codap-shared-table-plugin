@@ -400,4 +400,8 @@ export class CodapHelper {
     }
     return false;
   }
+
+  static saveState(state: any) {
+    codapInterface.updateInteractiveState(state);
+  }
 }

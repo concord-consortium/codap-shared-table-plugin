@@ -71,6 +71,15 @@ class App extends Component {
     });
   }
 
+  public componentDidUpdate(prevProps: {}, prevState: IState) {
+    if ((prevState.personalDataKey !== this.state.personalDataKey)
+          || (prevState.lastPersonalDataLabel !== this.state.lastPersonalDataLabel)) {
+
+      const { personalDataKeyPrefix, lastPersonalDataLabel } = this.state;
+      Codap.saveState({ personalDataKeyPrefix, lastPersonalDataLabel });
+    }
+  }
+
   public render() {
     if (!this.state.shareId) {
       Codap.resizePlugin(kInitialDimensions.width, kInitialDimensions.height);
