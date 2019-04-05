@@ -27,8 +27,9 @@ const kNewDataContextTitle = "Collaborative Table";
 interface IState {
   availableDataContexts: DataContext[];
   selectedDataContext: string;
-  personalDataKey: string;
+  personalDataKeyPrefix: string;
   personalDataLabel: string;
+  personalDataKey: string;
   lastPersonalDataLabel: string;
   shareId?: string;
   joinShareId: string;
@@ -43,8 +44,9 @@ class App extends Component {
   public state: IState = {
     availableDataContexts: [],
     selectedDataContext: kNewSharedTable,
-    personalDataKey: randomize("a0", 10),
+    personalDataKeyPrefix: randomize("a0", 10),
     personalDataLabel: "",
+    personalDataKey: "",
     lastPersonalDataLabel: "",
     joinShareId: "",
     isInProcessOfSharing: false,
@@ -218,23 +220,22 @@ class App extends Component {
    * to the currentPersonalDataLabel if necessary, and this method will only return after state has been set,
    * in case there are other functions after it that expect state.personalDataLabel to be up-to-date.
    */
-  async getAndUpdatePersonalDataLabel() {
-    const {personalDataLabel, lastPersonalDataLabel } = this.state;
+  async updatePersonalDataLabelAndKey() {
+    const { personalDataKeyPrefix, personalDataLabel, lastPersonalDataLabel } = this.state;
+    const currentPersonalDataLabel = personalDataLabel || lastPersonalDataLabel;
 
-    let currentPersonalDataLabel = personalDataLabel;
-    if (!currentPersonalDataLabel) {
-      currentPersonalDataLabel = lastPersonalDataLabel;
-      await new Promise((resolve) => {
-        this.setState({ personalDataLabel: currentPersonalDataLabel }, resolve);
-      });
-    }
-    this.setState({ lastPersonalDataLabel: currentPersonalDataLabel });
-    return currentPersonalDataLabel;
+    await new Promise((resolve) => {
+      this.setState({
+        personalDataLabel: currentPersonalDataLabel,
+        lastPersonalDataLabel: currentPersonalDataLabel,
+        personalDataKey: `${personalDataKeyPrefix}-${currentPersonalDataLabel}`
+      }, resolve);
+    });
   }
 
   initiateShare = async () => {
-    const {selectedDataContext, personalDataKey } = this.state;
-    const personalDataLabel = await this.getAndUpdatePersonalDataLabel();
+    await this.updatePersonalDataLabelAndKey();
+    const {selectedDataContext, personalDataKey, personalDataLabel } = this.state;
 
     let dataContextName: string;
 
@@ -278,8 +279,8 @@ class App extends Component {
   }
 
   joinShare = async () => {
-    const {joinShareId: shareId, personalDataKey, selectedDataContext } = this.state;
-    const personalDataLabel = await this.getAndUpdatePersonalDataLabel();
+    await this.updatePersonalDataLabelAndKey();
+    const {joinShareId: shareId, personalDataKey, personalDataLabel, selectedDataContext } = this.state;
 
     this.setState({ isInProcessOfSharing: true });
     try {
