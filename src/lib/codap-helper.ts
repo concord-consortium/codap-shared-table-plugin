@@ -44,7 +44,8 @@ export class CodapHelper {
       preventTopLevelReorg: true,
       dimensions
     };
-    return await codapInterface.init(interfaceConfig);
+    await codapInterface.init(interfaceConfig);
+    return await codapInterface.getInteractiveState();
   }
 
   static addDataContextsListListener(callback: ClientHandler) {

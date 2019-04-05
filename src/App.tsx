@@ -24,13 +24,16 @@ const kShareIdLength = 6;
 const kNewSharedTable = "new-table";
 const kNewDataContextTitle = "Collaborative Table";
 
-interface IState {
+interface ISaveState {
+  personalDataKeyPrefix: string;
+  lastPersonalDataLabel: string;
+}
+
+interface IState extends ISaveState {
   availableDataContexts: DataContext[];
   selectedDataContext: string;
-  personalDataKeyPrefix: string;
   personalDataLabel: string;
   personalDataKey: string;
-  lastPersonalDataLabel: string;
   shareId?: string;
   joinShareId: string;
   isInProcessOfSharing: boolean;
@@ -61,8 +64,11 @@ class App extends Component {
 
   public componentDidMount() {
     Codap.initializePlugin(kPluginName, kVersion, kInitialDimensions)
-      .then(() => Codap.addDataContextsListListener(this.updateAvailableDataContexts))
-      .then(this.updateAvailableDataContexts);
+      .then((loadState: any) => {
+        this.setState(loadState as ISaveState);
+        Codap.addDataContextsListListener(this.updateAvailableDataContexts);
+        this.updateAvailableDataContexts();
+      });
 
     database = new DB({
       itemsAdded: this.itemsAdded,
