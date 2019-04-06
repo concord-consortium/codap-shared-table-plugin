@@ -1,6 +1,6 @@
 import React, { Component, ChangeEvent } from "react";
 import * as randomize from "randomatic";
-import { CodapHelper as Codap, DataContext} from "./lib/codap-helper";
+import { CodapHelper as Codap, DataContext, ISaveState} from "./lib/codap-helper";
 import { ClientNotification } from "./lib/CodapInterface";
 import { ClientItemValues } from "./lib/firebase-handlers";
 import { DB, SharedTableEntry } from "./lib/db";
@@ -23,11 +23,6 @@ const kShareIdLength = 6;
 
 const kNewSharedTable = "new-table";
 const kNewDataContextTitle = "Collaborative Table";
-
-interface ISaveState {
-  personalDataKeyPrefix: string;
-  lastPersonalDataLabel: string;
-}
 
 interface IState extends ISaveState {
   availableDataContexts: DataContext[];
@@ -64,8 +59,8 @@ class App extends Component {
 
   public componentDidMount() {
     Codap.initializePlugin(kPluginName, kVersion, kInitialDimensions)
-      .then((loadState: any) => {
-        this.setState(loadState as ISaveState);
+      .then(loadState => {
+        this.setState(loadState);
         Codap.addDataContextsListListener(this.updateAvailableDataContexts);
         this.updateAvailableDataContexts();
       });
