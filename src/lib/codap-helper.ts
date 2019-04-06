@@ -31,6 +31,8 @@ const collectionResource = (contextName: string, collectionName: string, subKey?
 const collaboratorsResource = (contextName: string, subKey: string) =>
                               collectionResource(contextName, "Collaborators", subKey);
 
+const kCollaboratorKey = "CollaboratorKey";
+
 export class CodapHelper {
 
   static async initializePlugin(pluginName: string, version: string,
@@ -115,19 +117,28 @@ export class CodapHelper {
     return result && result.success ? result.values : null;
   }
 
-  static async configureUserCase(dataContextName: string, personalDataLabel: string, alwaysCreate = false) {
-    const existingItemCount = await this.getItemCount(dataContextName);
-    if (alwaysCreate || (existingItemCount === 0)) {
+  static async configureUserCase(dataContextName: string, personalDataKey: string, personalDataLabel: string,
+      alwaysCreate = false) {
+    // see if we have an existing case
+    const userCase = await codapInterface.sendRequest({
+      action: "get",
+      resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
+    });
+    const userCaseId = userCase && userCase.values && userCase.values[0] && userCase.values[0].id;
+    if (alwaysCreate || !userCaseId) {
       await codapInterface.sendRequest({
         action: "create",
         resource: collaboratorsResource(dataContextName, "case"),
-        values: [{ values: { Name: personalDataLabel } }]
+        values: [{ values: {
+          Name: personalDataLabel,
+          [kCollaboratorKey]: personalDataKey
+        } }]
       });
     }
     else {
       await codapInterface.sendRequest({
         action: "update",
-        resource: collaboratorsResource(dataContextName, "caseByIndex[0]"),
+        resource: collaboratorsResource(dataContextName, `caseByID[${userCaseId}]`),
         values: { values: { Name: personalDataLabel } }
       });
     }
@@ -186,8 +197,8 @@ export class CodapHelper {
     return codapInterface.sendRequest(requests);
   }
 
-  static async addNewCollaborationCollections(dataContextName: string, personalDataLabel: string,
-      addEmptyDataCollection: boolean) {
+  static async addNewCollaborationCollections(dataContextName: string, personalDataKey: string,
+      personalDataLabel: string, addEmptyDataCollection: boolean) {
 
     const collections: Collection[] = [
       {
@@ -198,7 +209,10 @@ export class CodapHelper {
           singleCase: "name",
           pluralCase: "names"
         },
-        attrs: [{name: "Name", editable: false}]
+        attrs: [
+          {name: "Name", editable: false},
+          {name: kCollaboratorKey, editable: false, hidden: true}
+        ]
       }
     ];
 
@@ -213,7 +227,7 @@ export class CodapHelper {
 
     await this.addCollections(dataContextName, collections);
 
-    await this.configureUserCase(dataContextName, personalDataLabel);
+    await this.configureUserCase(dataContextName, personalDataKey, personalDataLabel);
   }
 
   /**
@@ -344,10 +358,10 @@ export class CodapHelper {
     return null;
   }
 
-  static async getItemsOfCollaborator(dataContextName: string, name: string): Promise<any[]> {
+  static async getItemsOfCollaborator(dataContextName: string, personalDataKey: string): Promise<any[]> {
     const res = await codapInterface.sendRequest({
       action: "get",
-      resource: dataContextResource(dataContextName, `itemSearch[Name==${name}]`)
+      resource: dataContextResource(dataContextName, `itemSearch[${kCollaboratorKey}==${personalDataKey}]`)
     });
     if (res.success) {
       return res.values;
@@ -355,10 +369,10 @@ export class CodapHelper {
     return [];
   }
 
-  static async getCaseForCollaborator(dataContextName: string, name: string) {
+  static async getCaseForCollaborator(dataContextName: string, personalDataKey: string) {
     const res = await codapInterface.sendRequest({
       action: "get",
-      resource: collaboratorsResource(dataContextName, `caseSearch[Name==${name}]`)
+      resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
     });
     // there should be only one such case
     return res.success && res.values && res.values.length ? res.values[0] : null;
@@ -372,9 +386,9 @@ export class CodapHelper {
     return res.success ? res.values : [];
   }
 
-  static async moveUserCaseToLast(dataContextName: string, name: string) {
+  static async moveUserCaseToLast(dataContextName: string, personalDataKey: string) {
     const cases: any[] = await this.getCollaboratorCases(dataContextName);
-    const selfIndex = cases.findIndex(aCase => aCase.values.Name === name);
+    const selfIndex = cases.findIndex(aCase => aCase.values[kCollaboratorKey] === personalDataKey);
     const selfId = selfIndex >= 0 ? cases[selfIndex].id : undefined;
     if (selfId && (selfIndex !== cases.length - 1)) {
       const res = await codapInterface.sendRequest({
