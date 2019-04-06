@@ -358,10 +358,10 @@ export class CodapHelper {
     return null;
   }
 
-  static async getItemsOfCollaborator(dataContextName: string, userKey: string): Promise<any[]> {
+  static async getItemsOfCollaborator(dataContextName: string, personalDataKey: string): Promise<any[]> {
     const res = await codapInterface.sendRequest({
       action: "get",
-      resource: dataContextResource(dataContextName, `itemSearch[${kCollaboratorKey}==${userKey}]`)
+      resource: dataContextResource(dataContextName, `itemSearch[${kCollaboratorKey}==${personalDataKey}]`)
     });
     if (res.success) {
       return res.values;
@@ -369,10 +369,10 @@ export class CodapHelper {
     return [];
   }
 
-  static async getCaseForCollaborator(dataContextName: string, userKey: string) {
+  static async getCaseForCollaborator(dataContextName: string, personalDataKey: string) {
     const res = await codapInterface.sendRequest({
       action: "get",
-      resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${userKey}]`)
+      resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
     });
     // there should be only one such case
     return res.success && res.values && res.values.length ? res.values[0] : null;
