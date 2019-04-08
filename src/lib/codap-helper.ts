@@ -2,6 +2,11 @@ import * as randomize from "randomatic";
 import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attribute, IConfig } from "./CodapInterface";
 import { ClientItemValues } from "./firebase-handlers";
 
+export interface ISaveState {
+  personalDataKeyPrefix: string;
+  lastPersonalDataLabel: string;
+}
+
 export interface DataContextCreation {
   title: string;
   collections?: Collection[];
@@ -44,7 +49,8 @@ export class CodapHelper {
       preventTopLevelReorg: true,
       dimensions
     };
-    return await codapInterface.init(interfaceConfig);
+    await codapInterface.init(interfaceConfig);
+    return await codapInterface.getInteractiveState() as ISaveState;
   }
 
   static addDataContextsListListener(callback: ClientHandler) {
@@ -399,5 +405,9 @@ export class CodapHelper {
       return res.success;
     }
     return false;
+  }
+
+  static saveState(state: ISaveState) {
+    codapInterface.updateInteractiveState(state);
   }
 }

@@ -1,6 +1,6 @@
 import React, { Component, ChangeEvent } from "react";
 import * as randomize from "randomatic";
-import { CodapHelper as Codap, DataContext} from "./lib/codap-helper";
+import { CodapHelper as Codap, DataContext, ISaveState} from "./lib/codap-helper";
 import { ClientNotification } from "./lib/CodapInterface";
 import { ClientItemValues } from "./lib/firebase-handlers";
 import { DB, SharedTableEntry } from "./lib/db";
@@ -24,13 +24,11 @@ const kShareIdLength = 6;
 const kNewSharedTable = "new-table";
 const kNewDataContextTitle = "Collaborative Table";
 
-interface IState {
+interface IState extends ISaveState {
   availableDataContexts: DataContext[];
   selectedDataContext: string;
-  personalDataKeyPrefix: string;
   personalDataLabel: string;
   personalDataKey: string;
-  lastPersonalDataLabel: string;
   shareId?: string;
   joinShareId: string;
   isInProcessOfSharing: boolean;
@@ -61,14 +59,26 @@ class App extends Component {
 
   public componentDidMount() {
     Codap.initializePlugin(kPluginName, kVersion, kInitialDimensions)
-      .then(() => Codap.addDataContextsListListener(this.updateAvailableDataContexts))
-      .then(this.updateAvailableDataContexts);
+      .then(loadState => {
+        this.setState(loadState);
+        Codap.addDataContextsListListener(this.updateAvailableDataContexts);
+        this.updateAvailableDataContexts();
+      });
 
     database = new DB({
       itemsAdded: this.itemsAdded,
       itemsChanged: this.itemsChanged,
       itemsRemoved: this.itemsRemoved
     });
+  }
+
+  public componentDidUpdate(prevProps: {}, prevState: IState) {
+    if ((prevState.personalDataKey !== this.state.personalDataKey)
+          || (prevState.lastPersonalDataLabel !== this.state.lastPersonalDataLabel)) {
+
+      const { personalDataKeyPrefix, lastPersonalDataLabel } = this.state;
+      Codap.saveState({ personalDataKeyPrefix, lastPersonalDataLabel });
+    }
   }
 
   public render() {
