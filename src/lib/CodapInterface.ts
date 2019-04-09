@@ -114,6 +114,10 @@ export type ClientHandler = (notification: ClientNotification) => void;
 
 export interface Attribute {
   name: string;
+  formula?: string;
+  description?: string;
+  precision?: string;
+  unit?: string;
   editable?: boolean;
   deleteable?: boolean;
   hidden?: boolean;

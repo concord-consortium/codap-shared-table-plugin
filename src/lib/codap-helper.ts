@@ -35,6 +35,8 @@ const collectionResource = (contextName: string, collectionName: string, subKey?
                               `dataContext[${contextName}].collection[${collectionName}]${subKey ? "." + subKey : ""}`;
 const collaboratorsResource = (contextName: string, subKey: string) =>
                               collectionResource(contextName, "Collaborators", subKey);
+const attributeResource = (contextName: string, collectionName: string, attributeName: string) =>
+                              collectionResource(contextName, collectionName, `attribute[${attributeName}]`);
 
 const kCollaboratorKey = "CollaboratorKey";
 
@@ -332,6 +334,32 @@ export class CodapHelper {
           });
         });
       }
+
+      // synchronize properties of existing attributes
+      originalAttributes.forEach(origAttr => {
+        const sharedAttr = sharedAttributes.find(attr => attr.name === origAttr.name);
+        if (sharedAttr) {
+          const origAttrProps = origAttr.attr as any;
+          const sharedAttrProps = sharedAttr.attr as any;
+          const propsToUpdate: any = {};
+          let changed = false;
+          // tslint:disable-next-line: forin
+          for (const prop in sharedAttrProps) {
+            const value = sharedAttrProps[prop];
+            if (value !== origAttrProps[prop]) {
+              propsToUpdate[prop] = value;
+              changed = true;
+            }
+          }
+          if (changed) {
+            changeCommands.push({
+              action: "update",
+              resource: attributeResource(dataContext.name, origAttr.collection, origAttr.name),
+              values: propsToUpdate
+            });
+          }
+        }
+      });
 
       // After initial join we allow destructive syncing
       // Disabled for now, as we still have echo effects that sometimes
