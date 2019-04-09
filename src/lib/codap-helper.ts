@@ -45,6 +45,7 @@ export class CodapHelper {
     const interfaceConfig: IConfig = {
       name: pluginName,
       version,
+      cannotClose: false,
       preventDataContextReorg: false,
       preventTopLevelReorg: true,
       preventAttributeDeletion: false,
