@@ -45,8 +45,11 @@ export class CodapHelper {
     const interfaceConfig: IConfig = {
       name: pluginName,
       version,
+      cannotClose: false,
       preventDataContextReorg: false,
       preventTopLevelReorg: true,
+      preventAttributeDeletion: false,
+      allowEmptyAttributeDeletion: true,
       dimensions
     };
     await codapInterface.init(interfaceConfig);
@@ -216,7 +219,7 @@ export class CodapHelper {
           pluralCase: "names"
         },
         attrs: [
-          {name: "Name", editable: false},
+          {name: "Name", editable: false, deleteable: false},
           {name: kCollaboratorKey, editable: false, hidden: true}
         ]
       }
@@ -349,6 +352,17 @@ export class CodapHelper {
           width,
           height
         }
+      }
+    });
+  }
+
+  static configureForSharing(isSharing: boolean) {
+    codapInterface.sendRequest({
+      action: "update",
+      resource: "interactiveFrame",
+      values: {
+        cannotClose: isSharing,
+        preventAttributeDeletion: isSharing
       }
     });
   }
