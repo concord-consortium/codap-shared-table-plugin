@@ -346,7 +346,7 @@ export class CodapHelper {
           // tslint:disable-next-line: forin
           for (const prop in sharedAttrProps) {
             const value = sharedAttrProps[prop];
-            if ((value != null) && (value !== origAttrProps[prop])) {
+            if (value !== origAttrProps[prop]) {
               propsToUpdate[prop] = value;
               changed = true;
             }
