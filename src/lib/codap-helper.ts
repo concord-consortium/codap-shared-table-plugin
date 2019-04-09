@@ -126,29 +126,45 @@ export class CodapHelper {
     return result && result.success ? result.values : null;
   }
 
-  static async configureUserCase(dataContextName: string, personalDataKey: string, personalDataLabel: string,
-      alwaysCreate = false) {
-    // see if we have an existing case
-    const userCase = await codapInterface.sendRequest({
-      action: "get",
-      resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
-    });
-    const userCaseId = userCase && userCase.values && userCase.values[0] && userCase.values[0].id;
-    if (alwaysCreate || !userCaseId) {
+  static async configureUserCase(dataContextName: string, personalDataKey: string,
+                                  personalDataLabel: string, newContext = false) {
+    let userCaseId;
+    let hasUnsharedItems;
+    if (!newContext) {
+      // see if we have an existing case
+      const userCase = await codapInterface.sendRequest({
+        action: "get",
+        resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
+      });
+      userCaseId = userCase && userCase.values && userCase.values[0] && userCase.values[0].id;
+      if (!userCaseId) {
+        // any preexisting items to update?
+        const existingItemCount = await this.getItemCount(dataContextName);
+        hasUnsharedItems = existingItemCount > 0;
+      }
+    }
+    if (hasUnsharedItems) {
+      // update existing items with the user
       await codapInterface.sendRequest({
-        action: "create",
-        resource: collaboratorsResource(dataContextName, "case"),
-        values: [{ values: {
-          Name: personalDataLabel,
-          [kCollaboratorKey]: personalDataKey
-        } }]
+        action: "update",
+        resource: collaboratorsResource(dataContextName, "caseByIndex[0]"),
+        values: { values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
       });
     }
-    else {
+    else if (userCaseId) {
+      // update the user case, in case label changed
       await codapInterface.sendRequest({
         action: "update",
         resource: collaboratorsResource(dataContextName, `caseByID[${userCaseId}]`),
         values: { values: { Name: personalDataLabel } }
+      });
+    }
+    else {
+      // create the user case
+      await codapInterface.sendRequest({
+        action: "create",
+        resource: collaboratorsResource(dataContextName, "case"),
+        values: [{ values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }]
       });
     }
   }
@@ -318,16 +334,18 @@ export class CodapHelper {
       }
 
       // After initial join we allow destructive syncing
-      if (!initialJoin) {
-        const staleAttributes = originalAttributes.filter(attrA => {
-          return !sharedAttributes.some(attrB => attrA.name === attrB.name);
-        });
+      // Disabled for now, as we still have echo effects that sometimes
+      // cause attributes to be deleted incorrectly on initial join.
+      // if (!initialJoin) {
+      //   const staleAttributes = originalAttributes.filter(attrA => {
+      //     return !sharedAttributes.some(attrB => attrA.name === attrB.name);
+      //   });
 
-        changeCommands.push(...staleAttributes.map(attr => ({
-          action: "delete",
-          resource: collectionResource(dataContext.name, attr.collection, `attribute[${attr.name}]`)
-        })));
-      }
+      //   changeCommands.push(...staleAttributes.map(attr => ({
+      //     action: "delete",
+      //     resource: collectionResource(dataContext.name, attr.collection, `attribute[${attr.name}]`)
+      //   })));
+      // }
       await codapInterface.sendRequest(changeCommands);
     }
   }
