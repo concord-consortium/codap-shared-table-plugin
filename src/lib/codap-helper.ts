@@ -340,14 +340,23 @@ export class CodapHelper {
         const sharedAttr = sharedAttributes.find(attr => attr.name === origAttr.name);
         if (sharedAttr) {
           const origAttrProps = origAttr.attr as any;
-          const sharedAttrProps = sharedAttr.attr as any;
+          const defaultAttrProps = { formula: "", description: "", type: "", unit: "" };
+          const sharedAttrProps: any = { ...defaultAttrProps, ...sharedAttr.attr };
           const propsToUpdate: any = {};
           let changed = false;
           // tslint:disable-next-line: forin
           for (const prop in sharedAttrProps) {
-            const value = sharedAttrProps[prop];
-            if (value !== origAttrProps[prop]) {
-              propsToUpdate[prop] = value;
+            const origValue = origAttrProps[prop];
+            const sharedValue = sharedAttrProps[prop];
+            // ignore distinctions between different forms of empty value
+            // to avoid triggering extraneous update notifications
+            const isOrigEmpty = (origValue == null) || (origValue === "");
+            const isSharedEmpty = (sharedValue == null) || (sharedValue === "");
+            const shouldUpdate = isOrigEmpty || isSharedEmpty
+                                  ? isOrigEmpty !== isSharedEmpty
+                                  : origValue !== sharedValue;
+            if (shouldUpdate) {
+              propsToUpdate[prop] = sharedValue;
               changed = true;
             }
           }
