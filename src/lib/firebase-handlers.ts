@@ -40,44 +40,32 @@ export class FirebaseItemHandlers {
   }
 
   handleInitialItems = (data: firebase.database.DataSnapshot | null) => {
-    console.log(`FirebaseItemHandlers.handleInitialItems [begin]`);
     this.hasReceivedInitialItems = true;
     const items = data && data.val() as ClientItemValues[];
     if (items) {
-      console.log(`FirebaseItemHandlers.handleInitialItems items: ${items.length}`);
       this.clientHandlers.itemsAdded(this.user, items);
     }
-    console.log(`FirebaseItemHandlers.handleInitialItems [end]`);
   }
 
   handleItemAdded = (data: firebase.database.DataSnapshot | null) => {
     if (!this.hasReceivedInitialItems) return;
-    console.log(`FirebaseItemHandlers.handleItemAdded [begin]`);
     const item = data && data.val() as ClientItemValues;
     if (item) {
-      console.log(`FirebaseItemHandlers.handleItemAdded [itemAdded]`);
       this.clientHandlers.itemsAdded(this.user, [item]);
     }
-    console.log(`FirebaseItemHandlers.handleItemAdded [end]`);
   }
 
   handleItemChanged = (data: firebase.database.DataSnapshot | null) => {
-    console.log(`FirebaseItemHandlers.handleItemChanged [begin]`);
     const item = data && data.val() as ClientItemValues;
     if (item) {
-      console.log(`FirebaseItemHandlers.handleItemChanged [itemChanged]`);
       this.clientHandlers.itemsChanged(this.user, [item]);
     }
-    console.log(`FirebaseItemHandlers.handleItemChanged [end]`);
   }
 
   handleItemRemoved = (data: firebase.database.DataSnapshot | null) => {
-    console.log(`FirebaseItemHandlers.handleItemRemoved [begin]`);
     const item = data && data.val() as ClientItemValues;
     if (item) {
-      console.log(`FirebaseItemHandlers.handleItemRemoved [itemRemoved]`);
       this.clientHandlers.itemsRemoved(this.user, [item]);
     }
-    console.log(`FirebaseItemHandlers.handleItemRemoved [end]`);
   }
 }
