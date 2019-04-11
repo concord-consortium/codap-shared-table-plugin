@@ -116,6 +116,7 @@ export interface Attribute {
   name: string;
   formula?: string;
   description?: string;
+  type?: string;
   precision?: string;
   unit?: string;
   editable?: boolean;
