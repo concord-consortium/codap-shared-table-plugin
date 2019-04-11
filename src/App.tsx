@@ -53,12 +53,6 @@ class App extends Component {
     showJoinShareError: false
   };
 
-  // debounce so we don't send up partially-updated data contexts while syncing
-  writeDataContext = pDebounce(async (dataContext: DataContext | string | null) => {
-    const sharableDataContext = dataContext && await Codap.getSharableDataContext(dataContext);
-    sharableDataContext && database.set("dataContext", sharableDataContext);
-  }, 100);
-
   public componentDidMount() {
     Codap.initializePlugin(kPluginName, kVersion, kInitialDimensions)
       .then(loadState => {
@@ -202,13 +196,28 @@ class App extends Component {
     this.updateAvailableDataContexts(); // existing dataContext name may have changed
 
     const { shareId, selectedDataContext, personalDataKey } = this.state;
-    if (shareId) {
-      // update data context details
-      this.writeDataContext(selectedDataContext);
 
-      this.writeUserItems(selectedDataContext, personalDataKey);
-      Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+    // debounce so we don't send up partially-updated data contexts while syncing
+    const debounceDataContextResponse =
+      pDebounce(async () => {
+        if (shareId) {
+          // update data context details
+          await this.writeDataContext(selectedDataContext);
+
+          await this.writeUserItems(selectedDataContext, personalDataKey);
+          return await Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+        }
+        return false;
+      }, 100);
+
+    if (shareId) {
+      debounceDataContextResponse();
     }
+  }
+
+  async writeDataContext(dataContext: DataContext | string | null) {
+    const sharableDataContext = dataContext && await Codap.getSharableDataContext(dataContext);
+    sharableDataContext && database.set("dataContext", sharableDataContext);
   }
 
   async writeUserItems(selectedDataContext: string, personalDataKey: string) {
