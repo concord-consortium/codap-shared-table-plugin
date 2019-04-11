@@ -1,7 +1,7 @@
 import React, { Component, ChangeEvent } from "react";
 import * as randomize from "randomatic";
 import { CodapHelper as Codap, DataContext, ISaveState} from "./lib/codap-helper";
-import { ClientNotification } from "./lib/CodapInterface";
+import codapInterface, { ClientNotification } from "./lib/CodapInterface";
 import { ClientItemValues } from "./lib/firebase-handlers";
 import { DB, SharedTableEntry } from "./lib/db";
 const pkg = require("../package.json");
@@ -25,6 +25,7 @@ const kNewSharedTable = "new-table";
 const kNewDataContextTitle = "Collaborative Table";
 
 interface IState extends ISaveState {
+  id: string;
   availableDataContexts: DataContext[];
   selectedDataContext: string;
   personalDataLabel: string;
@@ -40,6 +41,7 @@ let database: DB;
 class App extends Component {
 
   public state: IState = {
+    id: "",
     availableDataContexts: [],
     selectedDataContext: kNewSharedTable,
     personalDataKeyPrefix: randomize("a0", 10),
@@ -60,7 +62,8 @@ class App extends Component {
   public componentDidMount() {
     Codap.initializePlugin(kPluginName, kVersion, kInitialDimensions)
       .then(loadState => {
-        this.setState(loadState);
+        const interactiveFrame = codapInterface.getInitialInteractiveFrame();
+        this.setState({ id: interactiveFrame.id, ...loadState });
         Codap.addDataContextsListListener(this.updateAvailableDataContexts);
         this.updateAvailableDataContexts();
       });
@@ -277,7 +280,7 @@ class App extends Component {
       const shareId = randomize("a0", kShareIdLength, { exclude: "0oOiIlL1" });
       this.setState({shareId});
       database.createSharedTable(shareId, personalDataKey);
-      Codap.configureForSharing(true);
+      Codap.configureForSharing(dataContextName, this.state.id, true);
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
       await this.writeDataContext(updatedNewContext);
@@ -300,7 +303,6 @@ class App extends Component {
         return;
       }
       this.setState({shareId});
-      Codap.configureForSharing(true);
 
       const response = await database.getAll();
       const sharedContextData = response && response.val() as SharedTableEntry | undefined;
@@ -313,6 +315,7 @@ class App extends Component {
         if (!existingDataContext) {
           const newDataContext = await Codap.createDataContext(sharedDataContext);
           if (newDataContext) {
+            await Codap.addEditableAttribute(newDataContext, personalDataKey);
             ownDataContextName = newDataContext.name;
             this.setState({ selectedDataContext: ownDataContextName });
           } else {
@@ -326,6 +329,7 @@ class App extends Component {
 
           await this.writeDataContext(selectedDataContext);
         }
+        Codap.configureForSharing(ownDataContextName, this.state.id, true);
 
         // listeners must be added after data context is configured
         database.installUserItemListeners();
@@ -357,6 +361,7 @@ class App extends Component {
   }
 
   leaveShare = () => {
+    Codap.configureForSharing(this.state.selectedDataContext, this.state.id, false);
     this.setState({
       shareId: null,
       selectedDataContext: kNewSharedTable,
@@ -364,7 +369,6 @@ class App extends Component {
       joinShareId: ""
     });
     database.leaveSharedTable();
-    Codap.configureForSharing(false);
   }
 
   itemsAdded = async (user: string, items: ClientItemValues[]) => {
