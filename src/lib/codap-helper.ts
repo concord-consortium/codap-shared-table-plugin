@@ -401,16 +401,16 @@ export class CodapHelper {
       // After initial join we allow destructive syncing
       // Disabled for now, as we still have echo effects that sometimes
       // cause attributes to be deleted incorrectly on initial join.
-      // if (!initialJoin) {
-      //   const staleAttributes = originalAttributes.filter(attrA => {
-      //     return !sharedAttributes.some(attrB => attrA.name === attrB.name);
-      //   });
+      if (!initialJoin) {
+        const staleAttributes = originalAttributes.filter(attrA => {
+          return !sharedAttributes.some(attrB => attrA.name === attrB.name);
+        });
 
-      //   changeCommands.push(...staleAttributes.map(attr => ({
-      //     action: "delete",
-      //     resource: collectionResource(dataContext.name, attr.collection, `attribute[${attr.name}]`)
-      //   })));
-      // }
+        changeCommands.push(...staleAttributes.map(attr => ({
+          action: "delete",
+          resource: collectionResource(dataContext.name, attr.collection, `attribute[${attr.name}]`)
+        })));
+      }
       await codapInterface.sendRequest(changeCommands);
     }
   }
