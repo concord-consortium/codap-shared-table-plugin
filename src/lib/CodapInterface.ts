@@ -95,6 +95,11 @@ export interface CodapApiResponse {
 }
 
 /**
+ * A cached copy of the initial interactiveFrame response
+ */
+var initialInteractiveFrame: any = {};
+
+/**
  * A serializable object shared with CODAP. This is saved as a part of the
  * CODAP document. It is intended for the data interactive's use to store
  * any information it may need to reestablish itself when a CODAP document
@@ -121,6 +126,7 @@ export interface Attribute {
   precision?: string;
   unit?: string;
   editable?: boolean;
+  renameable?: boolean;
   deleteable?: boolean;
   hidden?: boolean;
 }
@@ -243,6 +249,7 @@ const codapInterface = {
         var success = resp && resp[1] && resp[1].success;
         var receivedFrame = success && resp[1].values;
         var savedState = receivedFrame && receivedFrame.savedState;
+        this_.updateInitialInteractiveFrame(receivedFrame);
         this_.updateInteractiveState(savedState);
         if (success) {
           // deprecated way of conveying state
@@ -306,6 +313,15 @@ const codapInterface = {
   },
 
   /**
+   * Returns a copy of the initial interactive frame response.
+   *
+   * @returns {object}
+   */
+  getInitialInteractiveFrame: function () {
+    return initialInteractiveFrame;
+  },
+
+  /**
    * Returns the interactive state.
    *
    * @returns {object}
@@ -318,10 +334,15 @@ const codapInterface = {
    * Updates the interactive state.
    * @param iInteractiveState {Object}
    */
+  updateInitialInteractiveFrame: function (iInteractiveFrame: any) {
+    initialInteractiveFrame = Object.assign(initialInteractiveFrame, iInteractiveFrame);
+  },
+
+  /**
+   * Updates the interactive state.
+   * @param iInteractiveState {Object}
+   */
   updateInteractiveState: function (iInteractiveState: any) {
-    if (!iInteractiveState) {
-      return;
-    }
     interactiveState = Object.assign(interactiveState, iInteractiveState);
   },
 

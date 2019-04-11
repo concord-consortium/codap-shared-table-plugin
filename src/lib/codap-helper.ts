@@ -439,16 +439,25 @@ export class CodapHelper {
     });
   }
 
-  static configureForSharing(isSharing: boolean) {
-    codapInterface.sendRequest({
-      action: "update",
-      resource: "interactiveFrame",
-      values: {
-        cannotClose: isSharing,
-        preventAttributeDeletion: isSharing,
-        respectEditableItemAttribute: isSharing
+  static configureForSharing(dataContextName: string, controllerId: string, isSharing: boolean) {
+    codapInterface.sendRequest([
+      {
+        action: "update",
+        resource: dataContextResource(dataContextName),
+        values: {
+          managingController: isSharing ? controllerId : "__none__"
+        }
+      },
+      {
+        action: "update",
+        resource: "interactiveFrame",
+        values: {
+          cannotClose: isSharing,
+          preventAttributeDeletion: isSharing,
+          respectEditableItemAttribute: isSharing
+        }
       }
-    });
+    ]);
   }
 
   static async getDataContext(dataContextName: string): Promise<DataContext | null> {
