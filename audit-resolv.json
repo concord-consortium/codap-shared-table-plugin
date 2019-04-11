@@ -187,5 +187,17 @@
   },
   "786|react-scripts>jest>jest-cli>micromatch>braces": {
     "ignore": 1
+  },
+  "803|react-scripts>jest>jest-cli>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
+    "fix": 1
+  },
+  "803|react-scripts>jest>jest-cli>jest-runner>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
+    "fix": 1
+  },
+  "803|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
+    "fix": 1
+  },
+  "803|react-scripts>jest>jest-cli>jest-runtime>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
+    "fix": 1
   }
 }
