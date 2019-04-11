@@ -24,8 +24,8 @@
   "scripts": {
     "audit": "check-audit",
     "audit:resolve": "resolve-audit",
-    "lint": "tslint -c tslint.json 'src/**/*.{ts,tsx}'",
-    "lint:build": "tslint -c tslint-build.json 'src/**/*.{ts,tsx}'",
+    "lint": "tslint -c tslint.json -t verbose 'src/**/*.{ts,tsx}'",
+    "lint:build": "tslint -c tslint-build.json -t verbose 'src/**/*.{ts,tsx}'",
     "lint:fix": "tslint -c tslint-build.json --fix 'src/**/*.{ts,tsx}'",
     "start": "react-scripts start",
     "build": "react-scripts build",
