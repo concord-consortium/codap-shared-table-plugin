@@ -313,6 +313,7 @@ class App extends Component {
         if (!existingDataContext) {
           const newDataContext = await Codap.createDataContext(sharedDataContext);
           if (newDataContext) {
+            await Codap.addEditableAttribute(newDataContext, personalDataKey);
             ownDataContextName = newDataContext.name;
             this.setState({ selectedDataContext: ownDataContextName });
           } else {

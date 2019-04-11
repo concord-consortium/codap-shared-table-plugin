@@ -84,6 +84,7 @@ export interface IConfig {
   preventTopLevelReorg?: boolean;
   preventAttributeDeletion?: boolean;
   allowEmptyAttributeDeletion?: boolean;
+  respectEditableItemAttribute?: boolean;
 }
 
 var config: IConfig | null = null;

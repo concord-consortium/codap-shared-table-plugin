@@ -38,7 +38,19 @@ const collaboratorsResource = (contextName: string, subKey: string) =>
 const attributeResource = (contextName: string, collectionName: string, attributeName: string) =>
                               collectionResource(contextName, collectionName, `attribute[${attributeName}]`);
 
-const kCollaboratorKey = "CollaboratorKey";
+const kCollaboratorKey = "__collaborator__";
+const kEditableAttrName = "__editable__";
+
+function editableAttributeSpec(personalDataKey: string) {
+  return {
+    name: kEditableAttrName,
+    formula: `${kCollaboratorKey}="${personalDataKey}"`,
+    editable: false,
+    renameable: false,
+    deleteable: false,
+    hidden: true
+  };
+}
 
 export class CodapHelper {
 
@@ -52,6 +64,7 @@ export class CodapHelper {
       preventTopLevelReorg: true,
       preventAttributeDeletion: false,
       allowEmptyAttributeDeletion: true,
+      respectEditableItemAttribute: true,
       dimensions
     };
     await codapInterface.init(interfaceConfig);
@@ -114,6 +127,12 @@ export class CodapHelper {
         if (parent) {
           collection.parent = parent.name;
         }
+      }
+      if (collection.attrs) {
+        // don't sync the "__editable__" attribute
+        collection.attrs = collection.attrs.filter(attr => {
+          return attr.name !== kEditableAttrName;
+        });
       }
     });
     return sharableDataContext;
@@ -237,8 +256,9 @@ export class CodapHelper {
           pluralCase: "names"
         },
         attrs: [
-          {name: "Name", editable: false, deleteable: false},
-          {name: kCollaboratorKey, editable: false, hidden: true}
+          {name: "Name", editable: false, renameable: false, deleteable: false},
+          {name: kCollaboratorKey, editable: false, renameable: false, deleteable: false, hidden: true},
+          editableAttributeSpec(personalDataKey)
         ]
       }
     ];
@@ -255,6 +275,14 @@ export class CodapHelper {
     await this.addCollections(dataContextName, collections);
 
     await this.configureUserCase(dataContextName, personalDataKey, personalDataLabel);
+  }
+
+  static async addEditableAttribute(dataContext: DataContext, personalDataKey: string) {
+    const result = await codapInterface.sendRequest({
+                            action: "create",
+                            resource: collectionResource(dataContext.name, "Collaborators", "attribute"),
+                            values: editableAttributeSpec(personalDataKey)
+                          });
   }
 
   /**
@@ -417,7 +445,8 @@ export class CodapHelper {
       resource: "interactiveFrame",
       values: {
         cannotClose: isSharing,
-        preventAttributeDeletion: isSharing
+        preventAttributeDeletion: isSharing,
+        respectEditableItemAttribute: isSharing
       }
     });
   }
@@ -438,10 +467,9 @@ export class CodapHelper {
       action: "get",
       resource: dataContextResource(dataContextName, `itemSearch[${kCollaboratorKey}==${personalDataKey}]`)
     });
-    if (res.success) {
-      return res.values;
-    }
-    return [];
+    // don't sync "__editable__" attribute
+    delete res.values[kEditableAttrName];
+    return res.success ? res.values : [];
   }
 
   static async getCaseForCollaborator(dataContextName: string, personalDataKey: string) {
