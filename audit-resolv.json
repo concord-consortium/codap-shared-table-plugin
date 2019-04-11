@@ -199,5 +199,8 @@
   },
   "803|react-scripts>jest>jest-cli>jest-runtime>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
     "fix": 1
+  },
+  "803|react-scripts>fsevents>node-pre-gyp>tar": {
+    "remind": 1555098174960
   }
 }
