@@ -402,9 +402,12 @@ export class CodapHelper {
       // Disabled for now, as we still have echo effects that sometimes
       // cause attributes to be deleted incorrectly on initial join.
       if (!initialJoin) {
-        const staleAttributes = originalAttributes.filter(attrA => {
-          return !sharedAttributes.some(attrB => attrA.name === attrB.name);
-        });
+        const staleAttributes = originalAttributes
+                                  .filter(attrA => {
+                                    return !sharedAttributes.some(attrB => attrA.name === attrB.name);
+                                  })
+                                  // don't delete protected attributes (like __editable__)
+                                  .filter(attr => attr.attr.deleteable);
 
         changeCommands.push(...staleAttributes.map(attr => ({
           action: "delete",
