@@ -1,7 +1,10 @@
 {
-  "name": "codap-plugin-starter-project",
+  "name": "codap-shared-table-plugin",
   "version": "0.1.0",
+  "description": "CODAP plugin that implements collaborative table sharing",
   "homepage": ".",
+  "license": "MIT",
+  "repository": "https://github.com/concord-consortium/codap-shared-table-plugin",
   "dependencies": {
     "firebase": "^5.9.3",
     "iframe-phone": "^1.2.0",
