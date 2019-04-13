@@ -1,9 +1,9 @@
 import React, { Component, ChangeEvent } from "react";
 import * as randomize from "randomatic";
-import { CodapHelper as Codap, DataContext, ISaveState} from "./lib/codap-helper";
+import { CodapHelper as Codap, ISaveState} from "./lib/codap-helper";
 import codapInterface, { ClientNotification } from "./lib/CodapInterface";
-import { ClientItemValues } from "./lib/firebase-handlers";
-import { DB, SharedTableEntry } from "./lib/db";
+import { DB } from "./lib/db";
+import { DataContext, CodapItem, DBSharedTable } from "./lib/types";
 const pkg = require("../package.json");
 import "./App.css";
 import pDebounce from "p-debounce";
@@ -222,7 +222,7 @@ class App extends Component {
 
   async writeUserItems(selectedDataContext: string, personalDataKey: string) {
     const items = await Codap.getItemsOfCollaborator(selectedDataContext, personalDataKey);
-    database.setUserItems(personalDataKey, items);
+    database.writeUserItems(personalDataKey, items);
   }
 
   updateSelectedDataContext = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -314,10 +314,10 @@ class App extends Component {
       this.setState({shareId});
 
       const response = await database.getAll();
-      const sharedContextData = response && response.val() as SharedTableEntry | undefined;
+      const sharedContextData = response && response.val() as DBSharedTable | undefined;
       let ownDataContextName;
       if (sharedContextData) {
-        const { dataContext: sharedDataContext, items } = sharedContextData;
+        const { dataContext: sharedDataContext, itemData } = sharedContextData;
         const existingDataContext = (selectedDataContext !== kNewSharedTable) &&
                                     await Codap.getDataContext(selectedDataContext);
 
@@ -345,7 +345,7 @@ class App extends Component {
 
         if (!existingDataContext) {
           // add collaborator name case if necessary
-          if (!items || !items[personalDataKey]) {
+          if (!itemData || !itemData[personalDataKey]) {
             Codap.configureUserCase(ownDataContextName, personalDataKey, personalDataLabel, true);
           }
         }
@@ -380,19 +380,19 @@ class App extends Component {
     database.leaveSharedTable();
   }
 
-  itemsAdded = async (user: string, items: ClientItemValues[]) => {
+  itemsAdded = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.createOrUpdateItems(selectedDataContext, items);
     Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
   }
 
-  itemsChanged = async (user: string, items: ClientItemValues[]) => {
+  itemsChanged = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.createOrUpdateItems(selectedDataContext, items);
     Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
   }
 
-  itemsRemoved = async (user: string, items: ClientItemValues[]) => {
+  itemsRemoved = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.removeItems(selectedDataContext, items);
     Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);

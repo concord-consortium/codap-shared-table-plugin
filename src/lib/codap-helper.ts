@@ -1,32 +1,17 @@
 import * as randomize from "randomatic";
-import codapInterface, { CodapApiResponse, ClientHandler, Collection, Attribute, IConfig } from "./CodapInterface";
-import { ClientItemValues } from "./firebase-handlers";
+import codapInterface, { CodapApiResponse, ClientHandler, IConfig } from "./CodapInterface";
+import { Attribute, Collection, DataContext, DataContextCreation, CodapItem } from "./types";
 
 export interface ISaveState {
   personalDataKeyPrefix: string;
   lastPersonalDataLabel: string;
 }
 
-export interface DataContextCreation {
-  title: string;
-  collections?: Collection[];
-}
-
-export interface DataContext extends DataContextCreation {
-  name: string;
-  collections: Collection[];
-}
-
-interface AttributeMeta {
+export interface AttributeMeta {
   name: string;
   collection: string;
   index: number;
   attr: Attribute;
-}
-
-export interface CodapItem {
-  id: string;
-  values: { [prop: string]: any };
 }
 
 const dataContextResource = (contextName: string, subKey?: string) =>
@@ -214,7 +199,7 @@ export class CodapHelper {
     });
   }
 
-  static async createOrUpdateItems(dataContextName: string, itemValues: ClientItemValues[]) {
+  static async createOrUpdateItems(dataContextName: string, itemValues: CodapItem[]) {
     // should eventually cache the IDs locally
     const existingItems = await this.getAllItems(dataContextName);
     const existingIdsArray = existingItems && existingItems.map(item => item.id);
@@ -235,7 +220,7 @@ export class CodapHelper {
     return codapInterface.sendRequest(requests);
   }
 
-  static async removeItems(dataContextName: string, itemValues: ClientItemValues[]) {
+  static async removeItems(dataContextName: string, itemValues: CodapItem[]) {
     const requests = itemValues.map(item => ({
             action: "delete",
             resource: dataContextResource(dataContextName, `itemByID[${item.id}]`)
@@ -399,8 +384,6 @@ export class CodapHelper {
       });
 
       // After initial join we allow destructive syncing
-      // Disabled for now, as we still have echo effects that sometimes
-      // cause attributes to be deleted incorrectly on initial join.
       if (!initialJoin) {
         const staleAttributes = originalAttributes
                                   .filter(attrA => {
