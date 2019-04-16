@@ -1,4 +1,5 @@
-import { CodapItem, CodapItemValues, DBItemData } from "./types";
+import { CodapItem, CodapItemValues } from "./types";
+import { DBItemData } from "./db-types";
 
 export type ClientItemsHandler = (user: string, items: CodapItem[]) => void;
 export interface ClientItemsHandlers {
