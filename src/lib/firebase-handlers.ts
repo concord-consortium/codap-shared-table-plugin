@@ -1,8 +1,7 @@
-export interface ClientItemValues {
-  id: string;
-  values: { [attr: string]: any };
-}
-export type ClientItemsHandler = (user: string, items: ClientItemValues[]) => void;
+import { CodapItem, CodapItemValues } from "./types";
+import { DBItemData } from "./db-types";
+
+export type ClientItemsHandler = (user: string, items: CodapItem[]) => void;
 export interface ClientItemsHandlers {
   itemsAdded: ClientItemsHandler;
   itemsChanged: ClientItemsHandler;
@@ -11,13 +10,15 @@ export interface ClientItemsHandlers {
 
 export class FirebaseItemHandlers {
   user: string;
+  userItemDataRef: firebase.database.Reference;
   userItemsRef: firebase.database.Reference;
   clientHandlers: ClientItemsHandlers;
   hasReceivedInitialItems: boolean;
 
-  constructor(user: string, userItemsRef: firebase.database.Reference, clientHandlers: ClientItemsHandlers) {
+  constructor(user: string, userItemDataRef: firebase.database.Reference, clientHandlers: ClientItemsHandlers) {
     this.user = user;
-    this.userItemsRef = userItemsRef;
+    this.userItemDataRef = userItemDataRef;
+    this.userItemsRef = userItemDataRef && userItemDataRef.child("items");
     this.clientHandlers = clientHandlers;
     this.hasReceivedInitialItems = false;
 
@@ -28,7 +29,7 @@ export class FirebaseItemHandlers {
     // cf. https://stackoverflow.com/a/18283441 for this technique of distinguishing
     // the initial batch of items from items added after the initial batch.
     this.userItemsRef.on('child_added', this.handleItemAdded);
-    this.userItemsRef.once('value', this.handleInitialItems);
+    this.userItemDataRef.once('value', this.handleInitialItems);
     this.userItemsRef.on('child_changed', this.handleItemChanged);
     this.userItemsRef.on('child_removed', this.handleItemRemoved);
   }
@@ -41,30 +42,36 @@ export class FirebaseItemHandlers {
 
   handleInitialItems = (data: firebase.database.DataSnapshot | null) => {
     this.hasReceivedInitialItems = true;
-    const items = data && data.val() as ClientItemValues[];
-    if (items) {
+    const itemData = data && data.val() as DBItemData;
+    if (itemData) {
+      const items = itemData.order
+                      .map(id => ({ id, values: itemData.items[id] }))
+                      .filter(item => !!item);
       this.clientHandlers.itemsAdded(this.user, items);
     }
   }
 
   handleItemAdded = (data: firebase.database.DataSnapshot | null) => {
     if (!this.hasReceivedInitialItems) return;
-    const item = data && data.val() as ClientItemValues;
-    if (item) {
+    const itemValues = data && data.val() as CodapItemValues;
+    if (data && itemValues) {
+      const item: CodapItem = { id: data.key as string, values: itemValues };
       this.clientHandlers.itemsAdded(this.user, [item]);
     }
   }
 
   handleItemChanged = (data: firebase.database.DataSnapshot | null) => {
-    const item = data && data.val() as ClientItemValues;
-    if (item) {
+    const itemValues = data && data.val() as CodapItemValues;
+    if (data && itemValues) {
+      const item: CodapItem = { id: data.key as string, values: itemValues };
       this.clientHandlers.itemsChanged(this.user, [item]);
     }
   }
 
   handleItemRemoved = (data: firebase.database.DataSnapshot | null) => {
-    const item = data && data.val() as ClientItemValues;
-    if (item) {
+    const itemValues = data && data.val() as CodapItemValues;
+    if (data && itemValues) {
+      const item: CodapItem = { id: data.key as string, values: itemValues };
       this.clientHandlers.itemsRemoved(this.user, [item]);
     }
   }

@@ -1,20 +1,13 @@
 import * as firebase from "firebase/app";
 import "firebase/database";
 import { ClientItemsHandlers, FirebaseItemHandlers } from "./firebase-handlers";
-import { DataContext } from "./codap-helper";
+import { DataContext, CodapItem } from "./types";
 
 const config = {
   apiKey: "AIzaSyASCGi9fWCUX3orJVB9d6svJbxDHfSRJVA",
   authDomain: "codap-shared-table-plugin.firebaseapp.com",
   databaseURL: "https://codap-shared-table-plugin.firebaseio.com"
 };
-
-export interface SharedTableEntry {
-  connectedUsers: string[];
-  allUsers: string[];
-  dataContext: DataContext;
-  items?: {[key: string]: any[]};
-}
 
 /**
  * Recursively traverses objects and arrays to remove any properties with
@@ -67,12 +60,8 @@ export class DB {
     return this.shareRef && this.shareRef.child("allUsers");
   }
 
-  getItemsRef() {
-    return this.shareRef && this.shareRef.child("items");
-  }
-
-  getItemsRefForUser(user: string) {
-    const itemsRef = this.getItemsRef();
+  getUserItemDataRef(user: string) {
+    const itemsRef = this.shareRef && this.shareRef.child("itemData");
     return itemsRef && itemsRef.child(user);
   }
 
@@ -111,22 +100,17 @@ export class DB {
     return this.shareRef && this.shareRef.once("value");
   }
 
-  // retrieves data from `shared-tables/${shareId}/items`
-  async getAllItems() {
-    const itemsRef = this.getItemsRef();
-    return itemsRef && itemsRef.once("value");
-  }
-
-  async getUserItems(userLabel: string) {
-    const userItemsRef = this.getItemsRefForUser(userLabel);
-    return userItemsRef && userItemsRef.once("value");
-  }
-
-  setUserItems(userLabel: string, items: any) {
-    const userItemsRef = this.getItemsRefForUser(userLabel);
-    if (userItemsRef && items) {
-      userItemsRef.set(items);
-    }
+  writeUserItems(userLabel: string, items: CodapItem[]) {
+    const userItemDataRef = this.getUserItemDataRef(userLabel);
+    const userItemData = {
+            items: items.reduce((itemMap, item) => {
+                    const { __editable__, ...others } = item.values;
+                    itemMap[item.id] = others;
+                    return itemMap;
+                  }, {} as { [id: string]: any }),
+            order: items.map(item => item.id)
+          };
+    userItemDataRef && userItemDataRef.set(userItemData);
   }
 
   async getAllUsers() {
@@ -138,9 +122,11 @@ export class DB {
     const allUsersRef = this.getAllUsersRef();
     allUsersRef && allUsersRef.on("child_added", userData => {
       const user = userData && userData.key;
-      const userItemsRef = user ? this.getItemsRefForUser(user) : undefined;
-      if (user && userItemsRef && (user !== this.userLabel)) {
-        this.firebaseItemHandlers[user] = new FirebaseItemHandlers(user, userItemsRef, this.clientItemsHandlers);
+      if (user) {
+        const userItemDataRef = this.getUserItemDataRef(user);
+        if (userItemDataRef && (user !== this.userLabel)) {
+          this.firebaseItemHandlers[user] = new FirebaseItemHandlers(user, userItemDataRef, this.clientItemsHandlers);
+        }
       }
     });
     allUsersRef && allUsersRef.on("child_removed", userData => {

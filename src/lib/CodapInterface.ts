@@ -118,35 +118,6 @@ export interface ClientNotification {
 }
 export type ClientHandler = (notification: ClientNotification) => void;
 
-export interface Attribute {
-  name: string;
-  formula?: string;
-  description?: string;
-  type?: string;
-  precision?: string;
-  unit?: string;
-  editable?: boolean;
-  renameable?: boolean;
-  deleteable?: boolean;
-  hidden?: boolean;
-}
-
-export interface Collection {
-  name: string;
-  title: string;
-  id?: number;
-  parent?: string | number;
-  description?: string;
-  labels?: {
-    singleCase?: string;
-    pluralCase?: string;
-    singleCaseWithArticle?: string;
-    setOfCases?: string;
-    setOfCasesWithArticle?: string;
-  },
-  attrs: Attribute[]
-}
-
 /**
  * A list of subscribers to messages from CODAP
  * @param {[{actionSpec: {RegExp}, resourceSpec: {RegExp}, handler: {function}}]}
