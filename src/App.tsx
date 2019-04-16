@@ -1,5 +1,5 @@
 import React, { Component, ChangeEvent } from "react";
-import * as randomize from "randomatic";
+import randomize from "randomatic";
 import { CodapHelper as Codap, ISaveState} from "./lib/codap-helper";
 import codapInterface, { ClientNotification } from "./lib/CodapInterface";
 import { DB } from "./lib/db";
