@@ -187,6 +187,31 @@ class App extends Component {
     this.setState({availableDataContexts: contexts});
   }
 
+  debounceConfigUserCase = pDebounce(async (dataContext: string,
+                                            personalDataKey: string, personalDataLabel: string) => {
+    await Codap.configureUserCase(dataContext, personalDataKey, personalDataLabel);
+    return await Codap.moveUserCaseToLast(dataContext, personalDataKey);
+  }, 250);
+
+  // debounce so we don't send up partially-updated data contexts while syncing
+  debounceDataContextResponse = pDebounce(async (shareId: string, dataContext: string,
+                                                 personalDataKey: string, personalDataLabel: string) => {
+    if (shareId) {
+      // update data context details
+      await this.writeDataContext(dataContext);
+
+      const items = await this.writeUserItems(dataContext, personalDataKey);
+      // last items/cases may have been deleted
+      if (!items || !items.length) {
+        this.debounceConfigUserCase(dataContext, personalDataKey, personalDataLabel);
+      }
+      else {
+        return await Codap.moveUserCaseToLast(dataContext, personalDataKey);
+      }
+    }
+    return false;
+  }, 100);
+
   handleDataContextUpdate = async (notification: ClientNotification) => {
     const { action, resource, values } = notification;
     const operation = values && values.operation;
@@ -196,23 +221,10 @@ class App extends Component {
 
     this.updateAvailableDataContexts(); // existing dataContext name may have changed
 
-    const { shareId, selectedDataContext, personalDataKey } = this.state;
-
-    // debounce so we don't send up partially-updated data contexts while syncing
-    const debounceDataContextResponse =
-      pDebounce(async () => {
-        if (shareId) {
-          // update data context details
-          await this.writeDataContext(selectedDataContext);
-
-          await this.writeUserItems(selectedDataContext, personalDataKey);
-          return await Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
-        }
-        return false;
-      }, 100);
+    const { shareId, selectedDataContext, personalDataKey, personalDataLabel } = this.state;
 
     if (shareId) {
-      debounceDataContextResponse();
+      this.debounceDataContextResponse(shareId, selectedDataContext, personalDataKey, personalDataLabel);
     }
   }
 
@@ -224,6 +236,7 @@ class App extends Component {
   async writeUserItems(selectedDataContext: string, personalDataKey: string) {
     const items = await Codap.getItemsOfCollaborator(selectedDataContext, personalDataKey);
     database.writeUserItems(personalDataKey, items);
+    return items;
   }
 
   updateSelectedDataContext = (event: ChangeEvent<HTMLSelectElement>) => {

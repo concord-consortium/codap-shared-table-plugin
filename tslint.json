@@ -14,6 +14,7 @@
     "jsx-wrap-multiline": false,
     "max-classes-per-file": false,
     "member-access": false,
+    "member-ordering": false,
     "no-console": false,
     "no-debugger": false,
     "no-empty-interface": false,
