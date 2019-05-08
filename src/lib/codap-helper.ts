@@ -270,11 +270,11 @@ export class CodapHelper {
   }
 
   static async addEditableAttribute(dataContext: DataContext, personalDataKey: string) {
-    const result = await codapInterface.sendRequest({
-                            action: "create",
-                            resource: collectionResource(dataContext.name, "Collaborators", "attribute"),
-                            values: editableAttributeSpec(personalDataKey)
-                          });
+    return await codapInterface.sendRequest({
+                  action: "create",
+                  resource: collectionResource(dataContext.name, "Collaborators", "attribute"),
+                  values: editableAttributeSpec(personalDataKey)
+                });
   }
 
   /**

@@ -1,7 +1,7 @@
 import * as firebase from "firebase/app";
 import "firebase/database";
 import { ClientItemsHandlers, FirebaseItemHandlers } from "./firebase-handlers";
-import { DataContext, CodapItem } from "./types";
+import { CodapItem } from "./types";
 
 const config = {
   apiKey: "AIzaSyASCGi9fWCUX3orJVB9d6svJbxDHfSRJVA",

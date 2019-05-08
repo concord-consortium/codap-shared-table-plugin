@@ -5,9 +5,9 @@ import codapInterface, { ClientNotification } from "./lib/CodapInterface";
 import { DB } from "./lib/db";
 import { DBSharedTable } from "./lib/db-types";
 import { DataContext, CodapItem } from "./lib/types";
-const pkg = require("../package.json");
-import "./App.css";
 import pDebounce from "p-debounce";
+import * as pkg from "../package.json";
+import "./App.css";
 
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = pkg.version;
@@ -213,7 +213,8 @@ class App extends Component {
   }, 100);
 
   handleDataContextUpdate = async (notification: ClientNotification) => {
-    const { action, resource, values } = notification;
+    // const { action, resource } = notification;
+    const { values } = notification;
     const operation = values && values.operation;
     const skipOperations = ["selectCases"];
 
