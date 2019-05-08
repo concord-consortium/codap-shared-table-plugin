@@ -134,32 +134,36 @@ export class CodapHelper {
 
   static async configureUserCase(dataContextName: string, personalDataKey: string,
                                   personalDataLabel: string, newContext = false) {
+    const changes: any = [];
     let userCaseId;
-    let hasUnsharedItems;
+    let unsharedCases;
     if (!newContext) {
-      // see if we have an existing case
+      // see if we have an existing shared case
       const userCase = await codapInterface.sendRequest({
         action: "get",
         resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
       });
       userCaseId = userCase && userCase.values && userCase.values[0] && userCase.values[0].id;
       if (!userCaseId) {
-        // any preexisting items to update?
-        const existingItemCount = await this.getItemCount(dataContextName);
-        hasUnsharedItems = existingItemCount > 0;
+        // see if we have existing cases that have not yet been shared
+        const unshared = await codapInterface.sendRequest({
+          action: "get",
+          resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==]`)
+        });
+        unsharedCases = unshared && unshared.values && unshared.values.length ? unshared.values : undefined;
       }
     }
-    if (hasUnsharedItems) {
+    if (unsharedCases) {
       // update existing items with the user
-      await codapInterface.sendRequest({
-        action: "update",
-        resource: collaboratorsResource(dataContextName, "caseByIndex[0]"),
-        values: { values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
-      });
+      changes.push(...unsharedCases.map((aCase: any) => ({
+                        action: "update",
+                        resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
+                        values: { values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
+                      })));
     }
     else if (userCaseId) {
       // update the user case, in case label changed
-      await codapInterface.sendRequest({
+      changes.push({
         action: "update",
         resource: collaboratorsResource(dataContextName, `caseByID[${userCaseId}]`),
         values: { values: { Name: personalDataLabel } }
@@ -167,11 +171,14 @@ export class CodapHelper {
     }
     else {
       // create the user case
-      await codapInterface.sendRequest({
+      changes.push({
         action: "create",
         resource: collaboratorsResource(dataContextName, "case"),
         values: [{ values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }]
       });
+    }
+    if (changes.length) {
+      await codapInterface.sendRequest(changes);
     }
   }
 
