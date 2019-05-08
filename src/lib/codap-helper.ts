@@ -173,7 +173,7 @@ export class CodapHelper {
       // create the user case
       changes.push({
         action: "create",
-        resource: collaboratorsResource(dataContextName, "case"),
+        resource: collaboratorsResource(dataContextName, "item"),
         values: [{ values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }]
       });
     }
