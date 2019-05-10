@@ -190,7 +190,7 @@ class App extends Component {
   debounceConfigUserCase = pDebounce(async (dataContext: string,
                                             personalDataKey: string, personalDataLabel: string) => {
     await Codap.configureUserCase(dataContext, personalDataKey, personalDataLabel);
-    return await Codap.moveUserCaseToLast(dataContext, personalDataKey);
+    return await Codap.moveUserItemsToLast(dataContext, personalDataKey);
   }, 250);
 
   // debounce so we don't send up partially-updated data contexts while syncing
@@ -206,7 +206,7 @@ class App extends Component {
         this.debounceConfigUserCase(dataContext, personalDataKey, personalDataLabel);
       }
       else {
-        return await Codap.moveUserCaseToLast(dataContext, personalDataKey);
+        return await Codap.moveUserItemsToLast(dataContext, personalDataKey);
       }
     }
     return false;
@@ -365,7 +365,7 @@ class App extends Component {
           }
         }
         else {
-          Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+          Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
           this.writeUserItems(selectedDataContext, personalDataKey);
         }
 
@@ -398,19 +398,19 @@ class App extends Component {
   itemsAdded = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.createOrUpdateItems(selectedDataContext, items);
-    Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+    Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
   }
 
   itemsChanged = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.createOrUpdateItems(selectedDataContext, items);
-    Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+    Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
   }
 
   itemsRemoved = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.removeItems(selectedDataContext, items);
-    Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+    Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
   }
 }
 

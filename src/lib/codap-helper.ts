@@ -491,19 +491,13 @@ export class CodapHelper {
     return res.success ? res.values : [];
   }
 
-  static async moveUserCaseToLast(dataContextName: string, personalDataKey: string) {
-    const cases: any[] = await this.getCollaboratorCases(dataContextName);
-    const selfIndex = cases.findIndex(aCase => aCase.values[kCollaboratorKey] === personalDataKey);
-    const selfId = selfIndex >= 0 ? cases[selfIndex].id : undefined;
-    if (selfId && (selfIndex !== cases.length - 1)) {
-      const res = await codapInterface.sendRequest({
-        action: "notify",
-        resource: collaboratorsResource(dataContextName, `caseByID[${selfId}]`),
-        values: { caseOrder: "last" }
-      });
-      return res.success;
-    }
-    return false;
+  static async moveUserItemsToLast(dataContextName: string, personalDataKey: string) {
+    const itemSearchString = `itemSearch[${kCollaboratorKey}==${personalDataKey}]`;
+    return await codapInterface.sendRequest({
+                  action: "notify",
+                  resource: dataContextResource(dataContextName, itemSearchString),
+                  values: { itemOrder: "last" }
+                });
   }
 
   static saveState(state: ISaveState) {
