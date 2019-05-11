@@ -5,6 +5,7 @@ import { Attribute, Collection, DataContext, DataContextCreation, CodapItem } fr
 export interface ISaveState {
   personalDataKeyPrefix: string;
   lastPersonalDataLabel: string;
+  lastSelectedDataContext: string;
 }
 
 export interface AttributeMeta {
@@ -501,6 +502,7 @@ export class CodapHelper {
   }
 
   static saveState(state: ISaveState) {
-    codapInterface.updateInteractiveState(state);
+    const { personalDataKeyPrefix, lastPersonalDataLabel, lastSelectedDataContext } = state;
+    codapInterface.updateInteractiveState({ personalDataKeyPrefix, lastPersonalDataLabel, lastSelectedDataContext });
   }
 }
