@@ -223,10 +223,26 @@ class App extends Component {
 
     this.updateAvailableDataContexts(); // existing dataContext name may have changed
 
+    this.handleCreatedItems(notification);
+
     const { shareId, selectedDataContext, personalDataKey, personalDataLabel } = this.state;
 
     if (shareId) {
       this.debounceDataContextResponse(shareId, selectedDataContext, personalDataKey, personalDataLabel);
+    }
+  }
+
+  handleCreatedItems = async (notification: ClientNotification) => {
+    const { values } = notification;
+    const operation = values && values.operation;
+    if (["createCases", "createItems"].indexOf(operation) >= 0) {
+      const { shareId, selectedDataContext, personalDataKey, personalDataLabel } = this.state;
+      if (shareId && selectedDataContext) {
+        const changes = await Codap.configureUnsharedCases(selectedDataContext, personalDataKey, personalDataLabel);
+        if (changes && changes.length) {
+          codapInterface.sendRequest(changes);
+        }
+      }
     }
   }
 
@@ -342,7 +358,8 @@ class App extends Component {
                                     await Codap.getDataContext(selectedDataContext);
 
         if (!existingDataContext) {
-          const newDataContext = await Codap.createDataContext(sharedDataContext);
+          const newDataContext = sharedDataContext &&
+                                  await Codap.createDataContext(sharedDataContext);
           if (newDataContext) {
             await Codap.addEditableAttribute(newDataContext, personalDataKey);
             ownDataContextName = newDataContext.name;

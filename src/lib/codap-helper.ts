@@ -137,7 +137,7 @@ export class CodapHelper {
                                   personalDataLabel: string, newContext = false) {
     const changes: any = [];
     let userCaseId;
-    let unsharedCases;
+    let unsharedChanges;
     if (!newContext) {
       // see if we have an existing shared case
       const userCase = await codapInterface.sendRequest({
@@ -146,21 +146,12 @@ export class CodapHelper {
       });
       userCaseId = userCase && userCase.values && userCase.values[0] && userCase.values[0].id;
       if (!userCaseId) {
-        // see if we have existing cases that have not yet been shared
-        const unshared = await codapInterface.sendRequest({
-          action: "get",
-          resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==]`)
-        });
-        unsharedCases = unshared && unshared.values && unshared.values.length ? unshared.values : undefined;
+        // update existing items with the user
+        unsharedChanges = await this.configureUnsharedCases(dataContextName, personalDataKey, personalDataLabel);
       }
     }
-    if (unsharedCases) {
-      // update existing items with the user
-      changes.push(...unsharedCases.map((aCase: any) => ({
-                        action: "update",
-                        resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
-                        values: { values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
-                      })));
+    if (unsharedChanges) {
+      changes.push(...unsharedChanges);
     }
     else if (userCaseId) {
       // update the user case, in case label changed
@@ -180,6 +171,25 @@ export class CodapHelper {
     }
     if (changes.length) {
       await codapInterface.sendRequest(changes);
+    }
+  }
+
+  static async configureUnsharedCases(dataContextName: string, personalDataKey: string,
+                                      personalDataLabel: string) {
+    // see if we have existing cases that have not yet been shared
+    const unshared = await codapInterface.sendRequest({
+                      action: "get",
+                      resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==]`)
+                    });
+    const unsharedCases = unshared && unshared.values && unshared.values.length
+                            ? unshared.values : undefined;
+    if (unsharedCases) {
+      // update existing items with the user
+      return unsharedCases.map((aCase: any) => ({
+        action: "update",
+        resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
+        values: { values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
+      }));
     }
   }
 
