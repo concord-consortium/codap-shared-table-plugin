@@ -5,9 +5,9 @@ import codapInterface, { ClientNotification } from "./lib/CodapInterface";
 import { DB } from "./lib/db";
 import { DBSharedTable } from "./lib/db-types";
 import { DataContext, CodapItem } from "./lib/types";
-const pkg = require("../package.json");
-import "./App.css";
 import pDebounce from "p-debounce";
+import * as pkg from "../package.json";
+import "./App.css";
 
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = pkg.version;
@@ -44,11 +44,12 @@ class App extends Component {
   public state: IState = {
     id: "",
     availableDataContexts: [],
-    selectedDataContext: kNewSharedTable,
+    selectedDataContext: "",
     personalDataKeyPrefix: randomize("a0", 10),
     personalDataLabel: "",
     personalDataKey: "",
     lastPersonalDataLabel: "",
+    lastSelectedDataContext: "",
     joinShareId: "",
     isInProcessOfSharing: false,
     showJoinShareError: false
@@ -71,11 +72,10 @@ class App extends Component {
   }
 
   public componentDidUpdate(prevProps: {}, prevState: IState) {
-    if ((prevState.personalDataKey !== this.state.personalDataKey)
-          || (prevState.lastPersonalDataLabel !== this.state.lastPersonalDataLabel)) {
-
-      const { personalDataKeyPrefix, lastPersonalDataLabel } = this.state;
-      Codap.saveState({ personalDataKeyPrefix, lastPersonalDataLabel });
+    if ((prevState.personalDataKey !== this.state.personalDataKey) ||
+        (prevState.lastPersonalDataLabel !== this.state.lastPersonalDataLabel) ||
+        (prevState.lastSelectedDataContext !== this.state.lastSelectedDataContext)) {
+      Codap.saveState(this.state);
     }
   }
 
@@ -90,11 +90,12 @@ class App extends Component {
   }
 
   renderForm() {
-    const { availableDataContexts, selectedDataContext, personalDataLabel, lastPersonalDataLabel, joinShareId,
-            isInProcessOfSharing } = this.state;
+    const { availableDataContexts, selectedDataContext, lastSelectedDataContext,
+            personalDataLabel, lastPersonalDataLabel, joinShareId, isInProcessOfSharing } = this.state;
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
+    const selectedContextOption = selectedDataContext || lastSelectedDataContext || kNewSharedTable;
     const readyToInitiateShare = (!!personalDataLabel || !!lastPersonalDataLabel) && !isInProcessOfSharing;
     const readyToJoinShare = readyToInitiateShare && (joinShareId.length === kShareIdLength);
 
@@ -105,7 +106,7 @@ class App extends Component {
           <li>
             Select a table to share <strong>or</strong> create a new one
             <div>
-              <select value={selectedDataContext} onChange={this.updateSelectedDataContext}>
+              <select value={selectedContextOption} onChange={this.handleDataContextChange}>
                 { availableContextOptions }
                 <option value={kNewSharedTable}>Create new table</option>
               </select>
@@ -115,7 +116,7 @@ class App extends Component {
             Provide a name or label for grouping
             <div>
               <input type="text" value={personalDataLabel} placeholder={lastPersonalDataLabel}
-                onChange={this.updateDataLabel} />
+                onChange={this.handleDataLabelChange} />
             </div>
           </li>
           <li>
@@ -131,7 +132,7 @@ class App extends Component {
               </div>
               <div>
                 Enter code to join another group:
-                <input type="text" value={joinShareId} onChange={this.updateJoinShareId} />
+                <input type="text" value={joinShareId} onChange={this.handleJoinShareIdChange} />
                 <button disabled={!readyToJoinShare} onClick={this.joinShare}>Join</button>
               </div>
             </div>
@@ -190,7 +191,7 @@ class App extends Component {
   debounceConfigUserCase = pDebounce(async (dataContext: string,
                                             personalDataKey: string, personalDataLabel: string) => {
     await Codap.configureUserCase(dataContext, personalDataKey, personalDataLabel);
-    return await Codap.moveUserCaseToLast(dataContext, personalDataKey);
+    return await Codap.moveUserItemsToLast(dataContext, personalDataKey);
   }, 250);
 
   // debounce so we don't send up partially-updated data contexts while syncing
@@ -206,14 +207,15 @@ class App extends Component {
         this.debounceConfigUserCase(dataContext, personalDataKey, personalDataLabel);
       }
       else {
-        return await Codap.moveUserCaseToLast(dataContext, personalDataKey);
+        return await Codap.moveUserItemsToLast(dataContext, personalDataKey);
       }
     }
     return false;
   }, 100);
 
   handleDataContextUpdate = async (notification: ClientNotification) => {
-    const { action, resource, values } = notification;
+    // const { action, resource } = notification;
+    const { values } = notification;
     const operation = values && values.operation;
     const skipOperations = ["selectCases"];
 
@@ -239,15 +241,15 @@ class App extends Component {
     return items;
   }
 
-  updateSelectedDataContext = (event: ChangeEvent<HTMLSelectElement>) => {
-    this.setState({selectedDataContext: event.target.value});
+  handleDataContextChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    this.updateSelectedDataContext(event.target.value);
   }
 
-  updateDataLabel = (event: ChangeEvent<HTMLInputElement>) => {
+  handleDataLabelChange = (event: ChangeEvent<HTMLInputElement>) => {
     this.setState({personalDataLabel: event.target.value});
   }
 
-  updateJoinShareId = (event: ChangeEvent<HTMLInputElement>) => {
+  handleJoinShareIdChange = (event: ChangeEvent<HTMLInputElement>) => {
     this.setState({joinShareId: event.target.value, showJoinShareError: false});
   }
 
@@ -269,6 +271,10 @@ class App extends Component {
     });
   }
 
+  updateSelectedDataContext(selectedDataContext: string) {
+    this.setState({ selectedDataContext, lastSelectedDataContext: selectedDataContext });
+  }
+
   initiateShare = async () => {
     await this.updatePersonalDataLabelAndKey();
     const {selectedDataContext, personalDataKey, personalDataLabel } = this.state;
@@ -277,12 +283,12 @@ class App extends Component {
 
     this.setState({ isInProcessOfSharing: true });
     try {
-      if (selectedDataContext === kNewSharedTable) {
+      if (!selectedDataContext || (selectedDataContext === kNewSharedTable)) {
         // create new data context for sharing
         const newContext = await Codap.createDataContext({title: kNewDataContextTitle});
         if (newContext) {
           dataContextName = newContext.name;
-          this.setState({selectedDataContext: dataContextName});
+          this.updateSelectedDataContext(dataContextName);
           await Codap.addNewCollaborationCollections(dataContextName, personalDataKey, personalDataLabel, true);
           Codap.openTable(dataContextName);
         } else {
@@ -292,7 +298,7 @@ class App extends Component {
         const newContext = await Codap.getDataContext(selectedDataContext);
         if (newContext) {
           dataContextName = newContext.name;
-          this.setState({selectedDataContext: dataContextName});
+          this.updateSelectedDataContext(dataContextName);
           await Codap.addNewCollaborationCollections(dataContextName, personalDataKey, personalDataLabel, false);
           this.writeUserItems(selectedDataContext, personalDataKey);
         } else {
@@ -332,7 +338,7 @@ class App extends Component {
       let ownDataContextName;
       if (sharedContextData) {
         const { dataContext: sharedDataContext, itemData } = sharedContextData;
-        const existingDataContext = (selectedDataContext !== kNewSharedTable) &&
+        const existingDataContext = selectedDataContext && (selectedDataContext !== kNewSharedTable) &&
                                     await Codap.getDataContext(selectedDataContext);
 
         if (!existingDataContext) {
@@ -340,7 +346,7 @@ class App extends Component {
           if (newDataContext) {
             await Codap.addEditableAttribute(newDataContext, personalDataKey);
             ownDataContextName = newDataContext.name;
-            this.setState({ selectedDataContext: ownDataContextName });
+            this.updateSelectedDataContext(ownDataContextName);
           } else {
             throw new Error("failed to create data context");
           }
@@ -364,7 +370,7 @@ class App extends Component {
           }
         }
         else {
-          Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+          Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
           this.writeUserItems(selectedDataContext, personalDataKey);
         }
 
@@ -387,7 +393,6 @@ class App extends Component {
     Codap.configureForSharing(this.state.selectedDataContext, this.state.id, false);
     this.setState({
       shareId: null,
-      selectedDataContext: kNewSharedTable,
       personalDataLabel: "",
       joinShareId: ""
     });
@@ -397,19 +402,19 @@ class App extends Component {
   itemsAdded = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.createOrUpdateItems(selectedDataContext, items);
-    Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+    Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
   }
 
   itemsChanged = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.createOrUpdateItems(selectedDataContext, items);
-    Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+    Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
   }
 
   itemsRemoved = async (user: string, items: CodapItem[]) => {
     const { selectedDataContext, personalDataKey } = this.state;
     await Codap.removeItems(selectedDataContext, items);
-    Codap.moveUserCaseToLast(selectedDataContext, personalDataKey);
+    Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
   }
 }
 
