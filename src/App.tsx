@@ -1,6 +1,6 @@
 import React, { Component, ChangeEvent } from "react";
 import randomize from "randomatic";
-import { CodapHelper as Codap, ISaveState} from "./lib/codap-helper";
+import { CodapHelper as Codap, ISaveState } from "./lib/codap-helper";
 import codapInterface, { ClientNotification } from "./lib/CodapInterface";
 import { DB } from "./lib/db";
 import { DBSharedTable } from "./lib/db-types";
@@ -39,7 +39,7 @@ interface IState extends ISaveState {
 
 let database: DB;
 
-class App extends Component {
+export default class App extends Component {
 
   public state: IState = {
     id: "",
@@ -240,7 +240,7 @@ class App extends Component {
       if (shareId && selectedDataContext) {
         const changes = await Codap.configureUnsharedCases(selectedDataContext, personalDataKey, personalDataLabel);
         if (changes && changes.length) {
-          codapInterface.sendRequest(changes);
+          await codapInterface.sendRequest(changes);
         }
       }
     }
@@ -253,7 +253,8 @@ class App extends Component {
 
   async writeUserItems(selectedDataContext: string, personalDataKey: string) {
     const items = await Codap.getItemsOfCollaborator(selectedDataContext, personalDataKey);
-    database.writeUserItems(personalDataKey, items);
+    // write non-empty user items to firebase
+    database.writeUserItems(personalDataKey, items.filter(item => !Codap.isEmptyUserItem(item)));
     return items;
   }
 
@@ -434,5 +435,3 @@ class App extends Component {
     Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
   }
 }
-
-export default App;

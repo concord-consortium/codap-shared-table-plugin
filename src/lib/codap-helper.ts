@@ -1,5 +1,5 @@
 import * as randomize from "randomatic";
-import codapInterface, { CodapApiResponse, ClientHandler, IConfig } from "./CodapInterface";
+import codapInterface, { ClientHandler, CodapRequestResponse, IConfig } from "./CodapInterface";
 import { Attribute, Collection, DataContext, DataContextCreation, CodapItem } from "./types";
 
 export interface ISaveState {
@@ -66,10 +66,10 @@ export class CodapHelper {
   }
 
   static async getDataContextList() {
-    const result: CodapApiResponse = await codapInterface.sendRequest({
+    const result = await codapInterface.sendRequest({
       action: "get",
       resource: "dataContextList"
-    });
+    }) as CodapRequestResponse;
     if (result && result.success) {
       return result.values as DataContext[];
     }
@@ -86,7 +86,7 @@ export class CodapHelper {
         title,
         collections: collections || []
       }
-    });
+    }) as CodapRequestResponse;
     return res.success ? res.values : null;
   }
 
@@ -129,7 +129,7 @@ export class CodapHelper {
       action: "create",
       resource: dataContextResource(dataContextName, "collection"),
       values: collections
-    });
+    }) as CodapRequestResponse;
     return result && result.success ? result.values : null;
   }
 
@@ -139,22 +139,22 @@ export class CodapHelper {
     let userCaseId;
     let unsharedChanges;
     if (!newContext) {
-      // see if we have an existing shared case
+      // see if we have an existing shared case for this user
       const userCase = await codapInterface.sendRequest({
         action: "get",
         resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
       });
       userCaseId = userCase && userCase.values && userCase.values[0] && userCase.values[0].id;
       if (!userCaseId) {
-        // update existing items with the user
+        // update existing items with current user information
         unsharedChanges = await this.configureUnsharedCases(dataContextName, personalDataKey, personalDataLabel);
       }
     }
-    if (unsharedChanges) {
+    if (unsharedChanges && unsharedChanges.length) {
       changes.push(...unsharedChanges);
     }
     else if (userCaseId) {
-      // update the user case, in case label changed
+      // update the user case, since label may have changed
       changes.push({
         action: "update",
         resource: collaboratorsResource(dataContextName, `caseByID[${userCaseId}]`),
@@ -162,7 +162,9 @@ export class CodapHelper {
       });
     }
     else {
-      // create the user case
+      // create an empty user case - we create an empty case that contains values for the
+      // the sharing attributes but no other attributes so that user-entered items will
+      // automatically be grouped appropriately with other items of the same user.
       changes.push({
         action: "create",
         resource: collaboratorsResource(dataContextName, "item"),
@@ -177,27 +179,53 @@ export class CodapHelper {
   static async configureUnsharedCases(dataContextName: string, personalDataKey: string,
                                       personalDataLabel: string) {
     // see if we have existing cases that have not yet been shared
-    const unshared = await codapInterface.sendRequest({
+    const result = await codapInterface.sendRequest([
+                    { // get this user's items
+                      action: "get",
+                      resource: dataContextResource(dataContextName,
+                                                    `itemSearch[${kCollaboratorKey}==${personalDataKey}]`)
+                    },
+                    { // get cases not associated with any user
                       action: "get",
                       resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==]`)
-                    });
-    const unsharedCases = unshared && unshared.values && unshared.values.length
-                            ? unshared.values : undefined;
-    if (unsharedCases) {
-      // update existing items with the user
-      return unsharedCases.map((aCase: any) => ({
-        action: "update",
-        resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
-        values: { values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
-      }));
+                    }]) as CodapRequestResponse[];
+    const [userItemsResult, unsharedResult] = result;
+    const userItems: CodapItem[] = userItemsResult && userItemsResult.success &&
+                      userItemsResult.values && userItemsResult.values.length
+                        ? userItemsResult.values : [];
+    // identify empty user items, i.e. items with only the required sharing values
+    const emptyItems = userItems.filter(item => this.isEmptyUserItem(item));
+    const nonEmptyItemCount = userItems.length - emptyItems.length;
+    const unsharedCases = unsharedResult && unsharedResult.success &&
+                          unsharedResult.values && unsharedResult.values.length
+                            ? unsharedResult.values : [];
+    const requests: any[] = [];
+    if (emptyItems.length && (nonEmptyItemCount || unsharedCases.length)) {
+      emptyItems.forEach(item => {
+                  // delete any "empty" user items as long as there are non-empty user items
+                  requests.push({
+                    action: "delete",
+                    resource: collaboratorsResource(dataContextName, `itemByID[${item.id}]`),
+                  });
+                });
     }
+    unsharedCases.forEach((aCase: any) => {
+                    // apply required sharing values to currently "unshared" cases.
+                    // this occurs when items are generated from other plugins, for instance.
+                    requests.push({
+                      action: "update",
+                      resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
+                      values: { values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
+                    });
+                  });
+    return requests;
   }
 
   static async getItemCount(dataContextName: string) {
     const result = await codapInterface.sendRequest({
       action: "get",
       resource: dataContextResource(dataContextName, `itemCount`)
-    });
+    }) as CodapRequestResponse;
     return result && result.success ? result.values : null;
   }
 
@@ -205,7 +233,7 @@ export class CodapHelper {
     const result = await codapInterface.sendRequest({
       action: "get",
       resource: dataContextResource(dataContextName, `itemSearch[*]`)
-    });
+    }) as CodapRequestResponse;
     return result && result.success ? result.values : null;
   }
 
@@ -468,18 +496,18 @@ export class CodapHelper {
     const res = await codapInterface.sendRequest({
       action: "get",
       resource: dataContextResource(dataContextName)
-    });
+    }) as CodapRequestResponse;
     if (res.success) {
       return res.values;
     }
     return null;
   }
 
-  static async getItemsOfCollaborator(dataContextName: string, personalDataKey: string): Promise<any[]> {
+  static async getItemsOfCollaborator(dataContextName: string, personalDataKey: string): Promise<CodapItem[]> {
     const res = await codapInterface.sendRequest({
       action: "get",
       resource: dataContextResource(dataContextName, `itemSearch[${kCollaboratorKey}==${personalDataKey}]`)
-    });
+    }) as CodapRequestResponse;
     // don't sync "__editable__" attribute
     delete res.values[kEditableAttrName];
     return res.success ? res.values : [];
@@ -489,7 +517,7 @@ export class CodapHelper {
     const res = await codapInterface.sendRequest({
       action: "get",
       resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
-    });
+    }) as CodapRequestResponse;
     // there should be only one such case
     return res.success && res.values && res.values.length ? res.values[0] : null;
   }
@@ -498,8 +526,15 @@ export class CodapHelper {
     const res = await codapInterface.sendRequest({
       action: "get",
       resource: collaboratorsResource(dataContextName, `caseSearch[*]`)
-    });
+    }) as CodapRequestResponse;
     return res.success ? res.values : [];
+  }
+
+  static isEmptyUserItem(item: CodapItem) {
+    const { Name, [kCollaboratorKey]: collaborator,
+            [kEditableAttrName]: editable, ...others } = item.values;
+    // empty if there are no values besides the required sharing attributes
+    return Object.keys(others).length === 0;
   }
 
   static async moveUserItemsToLast(dataContextName: string, personalDataKey: string) {
