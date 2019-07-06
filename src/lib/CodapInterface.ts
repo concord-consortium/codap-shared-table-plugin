@@ -89,10 +89,12 @@ export interface IConfig {
 
 var config: IConfig | null = null;
 
-export interface CodapApiResponse {
+export interface CodapRequestResponse {
   success: boolean;
   values?: any;
 }
+
+export type CodapApiResponse = CodapRequestResponse | CodapRequestResponse[];
 
 /**
  * A cached copy of the initial interactiveFrame response
