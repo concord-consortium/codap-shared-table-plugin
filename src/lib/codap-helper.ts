@@ -347,11 +347,17 @@ export class CodapHelper {
 
       // first run through both DCs and gather the attribute details for each
       const originalAttributes: AttributeMeta[] = [];
+      const originalAttrMap: { [cid: string]: AttributeMeta } = {};
       const sharedAttributes: AttributeMeta[] = [];
+      const sharedAttrMap: { [cid: string]: AttributeMeta } = {};
 
       dataContext.collections.forEach(collection => {
         collection.attrs && collection.attrs.forEach((attr, i) => {
-          originalAttributes.push({name: attr.name, collection: collection.name, index: i, attr});
+          const attrMeta: AttributeMeta = { name: attr.name, collection: collection.name, index: i, attr };
+          originalAttributes.push(attrMeta);
+          if (attr.cid) {
+            originalAttrMap[attr.cid] = attrMeta;
+          }
         });
       });
 
@@ -368,13 +374,21 @@ export class CodapHelper {
             collectionForAttribute = lastCollectionName;
             index = 1000 + i;
           }
-          sharedAttributes.push({name: attr.name, collection: collectionForAttribute, index, attr});
+          const attrMeta: AttributeMeta = { name: attr.name, collection: collectionForAttribute, index, attr };
+          sharedAttributes.push(attrMeta);
+          if (attr.cid) {
+            sharedAttrMap[attr.cid] = attrMeta;
+          }
         });
       });
 
       // then create any new attributes as necessary
       const newAttributes = sharedAttributes.filter(attrA => {
-        return !originalAttributes.some(attrB => attrA.name === attrB.name);
+        const cid = attrA.attr.cid;
+        // match by name on initial join (to synchronize cids); by cid after
+        return !initialJoin && cid
+                ? !originalAttrMap[cid]
+                : !originalAttributes.some(attrB => attrA.name === attrB.name);
       });
 
       if (newAttributes.length > 0) {
@@ -396,7 +410,11 @@ export class CodapHelper {
 
       // synchronize properties of existing attributes
       originalAttributes.forEach(origAttr => {
-        const sharedAttr = sharedAttributes.find(attr => attr.name === origAttr.name);
+        const cid = origAttr.attr.cid;
+        // match by name on initial join (to synchronize cids); by cid after
+        const sharedAttr = !initialJoin && cid
+                            ? sharedAttrMap[cid]
+                            : sharedAttributes.find(attr => attr.name === origAttr.name);
         if (sharedAttr) {
           const origAttrProps = origAttr.attr as any;
           const defaultAttrProps = { formula: "", description: "", type: "", unit: "" };
@@ -433,7 +451,10 @@ export class CodapHelper {
       if (!initialJoin) {
         const staleAttributes = originalAttributes
                                   .filter(attrA => {
-                                    return !sharedAttributes.some(attrB => attrA.name === attrB.name);
+                                    const cid = attrA.attr.cid;
+                                    return cid
+                                            ? !sharedAttrMap[cid]
+                                            : !sharedAttributes.some(attrB => attrA.name === attrB.name);
                                   })
                                   // don't delete protected attributes (like __editable__)
                                   .filter(attr => attr.attr.deleteable);

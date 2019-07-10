@@ -3,6 +3,7 @@ export interface Attribute {
   formula?: string;
   description?: string;
   type?: string;
+  cid?: string;
   precision?: string;
   unit?: string;
   editable?: boolean;
