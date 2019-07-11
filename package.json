@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": "https://github.com/concord-consortium/codap-shared-table-plugin",
   "dependencies": {
-    "firebase": "^6.0.1",
+    "firebase": "^6.2.4",
     "iframe-phone": "^1.2.0",
     "p-debounce": "^2.1.0",
     "randomatic": "^3.1.1",
@@ -15,14 +15,14 @@
     "react-scripts": "3.0.1"
   },
   "devDependencies": {
-    "@types/jest": "^24.0.12",
-    "@types/node": "^12.0.0",
-    "@types/react": "^16.8.17",
+    "@types/jest": "^24.0.15",
+    "@types/node": "^12.6.2",
+    "@types/react": "^16.8.23",
     "@types/react-dom": "^16.8.4",
     "npm-audit-resolver": "^1.5.0",
-    "tslint": "^5.16.0",
+    "tslint": "^5.18.0",
     "tslint-react": "^4.0.0",
-    "typescript": "^3.4.5"
+    "typescript": "~3.4.5"
   },
   "scripts": {
     "audit": "check-audit",
