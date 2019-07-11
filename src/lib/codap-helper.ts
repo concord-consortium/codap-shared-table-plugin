@@ -305,6 +305,37 @@ export class CodapHelper {
       }
     ];
 
+    const collaboratorsCollection = await codapInterface.sendRequest({
+                                      action: "get",
+                                      resource: collectionResource(dataContextName, "Collaborators")
+                                    }) as CodapRequestResponse;
+
+    if (!collaboratorsCollection || !collaboratorsCollection.success) {
+      // if we don't have the Collaborators collection then create it
+      collections.push({
+        name: "Collaborators",
+        title: "List of collaborators",
+        parent: "_root_",
+        labels: {
+          singleCase: "name",
+          pluralCase: "names"
+        },
+        attrs: [
+          {name: "Name", editable: false, renameable: false, deleteable: false},
+          {name: kCollaboratorKey, editable: false, renameable: false, deleteable: false, hidden: false},
+          editableAttributeSpec(personalDataKey)
+        ]
+      });
+    }
+    else {
+      // if we already have the Collaborators collection, update the __editable__ attribute
+      await codapInterface.sendRequest({
+        action: "update",
+        resource: attributeResource(dataContextName, "Collaborators", kEditableAttrName),
+        values: editableAttributeSpec(personalDataKey)
+      });
+    }
+
     if (addEmptyDataCollection) {
       collections.push({
         name: "Data",
