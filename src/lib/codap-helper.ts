@@ -105,7 +105,18 @@ export class CodapHelper {
     } else {
       dataContext = _dataContext;
     }
-    const sharableDataContext: DataContext = JSON.parse(JSON.stringify(dataContext));
+
+    const cloneDataContext = (context: any) => {
+      // list of properties to exclude
+      const excludeProps = ["_categoryMap"];
+      const str = JSON.stringify(context,
+                                  (key: string, value: any) => {
+                                    return excludeProps.indexOf(key) >= 0 ? undefined : value;
+                                  });
+      return JSON.parse(str);
+    };
+
+    const sharableDataContext: DataContext = cloneDataContext(dataContext);
     sharableDataContext.collections.forEach(collection => {
       const parentId = collection.parent;
       if (parentId) {
