@@ -24,6 +24,7 @@ const collaboratorsResource = (contextName: string, subKey: string) =>
 const attributeResource = (contextName: string, collectionName: string, attributeName: string) =>
                               collectionResource(contextName, collectionName, `attribute[${attributeName}]`);
 
+const kShareLabelName = "shareName";
 const kCollaboratorKey = "__collaborator__";
 const kEditableAttrName = "__editable__";
 
@@ -169,7 +170,7 @@ export class CodapHelper {
       changes.push({
         action: "update",
         resource: collaboratorsResource(dataContextName, `caseByID[${userCaseId}]`),
-        values: { values: { Name: personalDataLabel } }
+        values: { values: { [kShareLabelName]: personalDataLabel } }
       });
     }
     else {
@@ -179,7 +180,7 @@ export class CodapHelper {
       changes.push({
         action: "create",
         resource: collaboratorsResource(dataContextName, "item"),
-        values: [{ values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }]
+        values: [{ values: { [kShareLabelName]: personalDataLabel, [kCollaboratorKey]: personalDataKey } }]
       });
     }
     if (changes.length) {
@@ -226,7 +227,7 @@ export class CodapHelper {
                     requests.push({
                       action: "update",
                       resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
-                      values: { values: { Name: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
+                      values: { values: { [kShareLabelName]: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
                     });
                   });
     return requests;
@@ -298,7 +299,7 @@ export class CodapHelper {
           pluralCase: "names"
         },
         attrs: [
-          {name: "Name", editable: false, renameable: false, deleteable: false},
+          {name: kShareLabelName, editable: false, renameable: false, deleteable: false},
           {name: kCollaboratorKey, editable: false, renameable: false, deleteable: false, hidden: true},
           editableAttributeSpec(personalDataKey)
         ]
@@ -594,7 +595,7 @@ export class CodapHelper {
   }
 
   static isEmptyUserItem(item: CodapItem) {
-    const { Name, [kCollaboratorKey]: collaborator,
+    const { [kShareLabelName]: shareLabel, [kCollaboratorKey]: collaborator,
             [kEditableAttrName]: editable, ...others } = item.values;
     // empty if there are no values besides the required sharing attributes
     return Object.keys(others).length === 0;
