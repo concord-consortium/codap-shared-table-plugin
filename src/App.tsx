@@ -59,7 +59,8 @@ export default class App extends Component {
     Codap.initializePlugin(kPluginName, kVersion, kInitialDimensions)
       .then(loadState => {
         const interactiveFrame = codapInterface.getInitialInteractiveFrame();
-        this.setState({ id: interactiveFrame.id, ...loadState });
+        const selectedDataContext = (loadState && loadState.lastSelectedDataContext) || "";
+        this.setState({ id: interactiveFrame.id, selectedDataContext, ...loadState });
         Codap.addDataContextsListListener(this.updateAvailableDataContexts);
         this.updateAvailableDataContexts();
       });
