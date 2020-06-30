@@ -1,0 +1,286 @@
+{
+  "decisions": {
+    "786|react-scripts>babel-jest>babel-plugin-istanbul>test-exclude>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>babel-jest>babel-plugin-istanbul>test-exclude>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>jest-environment-jsdom>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>jest-environment-node>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>jest-jasmine2>expect>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>jest-jasmine2>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>jest-jasmine2>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>jest-jasmine2>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-config>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-environment-jsdom>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-haste-map>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-resolve-dependencies>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>babel-jest>babel-plugin-istanbul>test-exclude>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>jest-environment-jsdom>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>jest-environment-node>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>jest-jasmine2>expect>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>jest-jasmine2>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>jest-jasmine2>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>jest-jasmine2>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-config>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-haste-map>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-jasmine2>expect>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-jasmine2>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-jasmine2>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-jasmine2>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>babel-plugin-istanbul>test-exclude>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>babel-jest>babel-plugin-istanbul>test-exclude>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>jest-environment-jsdom>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>jest-environment-node>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>jest-jasmine2>expect>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>jest-jasmine2>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>jest-jasmine2>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>jest-jasmine2>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-config>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-haste-map>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-runtime>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runner>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>babel-plugin-istanbul>test-exclude>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>babel-jest>babel-plugin-istanbul>test-exclude>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>jest-environment-jsdom>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>jest-environment-node>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>jest-jasmine2>expect>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>jest-jasmine2>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>jest-jasmine2>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>jest-jasmine2>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-config>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-haste-map>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-runtime>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-snapshot>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>jest-util>jest-message-util>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "786|react-scripts>jest>jest-cli>micromatch>braces": {
+      "madeAt": 0,
+      "decision": "ignore"
+    },
+    "803|react-scripts>jest>jest-cli>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "803|react-scripts>jest>jest-cli>jest-runner>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "803|react-scripts>jest>jest-cli>jest-runner>jest-runtime>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "803|react-scripts>jest>jest-cli>jest-runtime>jest-haste-map>sane>fsevents>node-pre-gyp>tar": {
+      "madeAt": 0,
+      "decision": "fix"
+    },
+    "803|react-scripts>fsevents>node-pre-gyp>tar": {
+      "madeAt": 1555011774960,
+      "decision": "postpone"
+    },
+    "1500|react-scripts>webpack-dev-server>yargs>yargs-parser": {
+      "decision": "ignore",
+      "madeAt": 1593473577111
+    },
+    "1500|npm-audit-resolver>audit-resolve-core>yargs-parser": {
+      "decision": "ignore",
+      "madeAt": 1593473577111
+    }
+  },
+  "rules": {},
+  "version": 1
+}
