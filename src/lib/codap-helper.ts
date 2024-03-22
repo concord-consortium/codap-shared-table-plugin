@@ -70,7 +70,7 @@ export class CodapHelper {
     const result = await codapInterface.sendRequest({
       action: "get",
       resource: "dataContextList"
-    }) as CodapRequestResponse;
+    }, undefined, "getDataContextList") as CodapRequestResponse;
     if (result && result.success) {
       return result.values as DataContext[];
     }
@@ -560,7 +560,7 @@ export class CodapHelper {
     const res = await codapInterface.sendRequest({
       action: "get",
       resource: dataContextResource(dataContextName)
-    }) as CodapRequestResponse;
+    }, undefined, "getDataContext") as CodapRequestResponse;
     if (res.success) {
       return res.values;
     }
