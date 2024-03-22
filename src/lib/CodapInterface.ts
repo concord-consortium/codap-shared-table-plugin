@@ -66,6 +66,14 @@ var stats = {
   timeCodapLastReq: (null as Date | null)
 };
 
+var debugStats = {
+  requestNum: 0,
+  numRequests: 0,
+  numResponses: 0,
+  totalSizeRequests: 0,
+  totalSizeResponses: 0,
+};
+
 export interface IDimensions {
   width: number;
   height: number;
@@ -336,7 +344,7 @@ const codapInterface = {
    *
    * @return {Promise} The promise of the response from CODAP.
    */
-  sendRequest: function (message: any, callback?: any) {
+  sendRequest: function (message: any, callback?: any, label?: string) {
     return new Promise<CodapApiResponse>(function (resolve, reject){
       function handleResponse (request: any, response: {success: boolean} | undefined, callback: (arg0: any, arg1: any) => void) {
         if (response === undefined) {
@@ -369,7 +377,16 @@ const codapInterface = {
               stats.timeCodapFirstReq = stats.timeDiLastReq;
             }
 
+            const requestNum = debugStats.requestNum++;
+            const requestSize = JSON.stringify(message).length;
+            debugStats.numRequests++;
+            debugStats.totalSizeRequests += requestSize;
+            console.log("CODAP: sendRequest", JSON.stringify({label, requestNum, requestSize, numRequests: debugStats.numRequests, totalSizeRequests: debugStats.totalSizeRequests}), JSON.stringify({message}));
             connection.call(message, function (response: any) {
+              const responseSize = JSON.stringify(response || {}).length;
+              debugStats.numResponses++;
+              debugStats.totalSizeResponses += responseSize;
+                console.log("CODAP: handleResponse", JSON.stringify({label, requestNum, responseSize, numResponses: debugStats.numResponses, totalSizeResponses: debugStats.totalSizeResponses}), JSON.stringify({message, response}));
               handleResponse(message, response, callback);
             });
           } else {
