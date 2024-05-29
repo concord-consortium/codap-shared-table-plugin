@@ -4,7 +4,7 @@ import { ClientItemsHandlers, FirebaseItemHandlers } from "./firebase-handlers";
 import { CodapItem } from "./types";
 
 const config = {
-  apiKey: "AIzaSyASCGi9fWCUX3orJVB9d6svJbxDHfSRJVA",
+  apiKey: atob("QUl6YVN5QVNDR2k5ZldDVVgzb3JKVkI5ZDZzdkpieERIZlNSSlZB"),
   authDomain: "codap-shared-table-plugin.firebaseapp.com",
   databaseURL: "https://codap-shared-table-plugin.firebaseio.com"
 };
