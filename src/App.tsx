@@ -285,7 +285,7 @@ export default class App extends Component {
         personalDataLabel: currentPersonalDataLabel,
         lastPersonalDataLabel: currentPersonalDataLabel,
         personalDataKey: `${personalDataKeyPrefix}-${currentPersonalDataLabel}`
-      }, resolve);
+      }, () => resolve(null));
     });
   }
 
