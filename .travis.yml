@@ -1,6 +1,6 @@
 sudo: false
 language: node_js
-node_js: lts/*
+node_js: 16
 install:
 - travis_retry gem install s3_website -v 3.4.0
 - travis_retry pip install awscli --upgrade --user
