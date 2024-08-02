@@ -198,7 +198,9 @@ export default class App extends Component {
   // debounce so we don't send up partially-updated data contexts while syncing
   debounceDataContextResponse = pDebounce(async (shareId: string, dataContext: string,
                                                  personalDataKey: string, personalDataLabel: string) => {
-    if (shareId) {
+    const { isInProcessOfSharing } = this.state;
+
+    if (shareId && !isInProcessOfSharing) {
       // update data context details
       await this.writeDataContext(dataContext);
 
