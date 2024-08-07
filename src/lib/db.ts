@@ -1,7 +1,7 @@
 import * as firebase from "firebase/app";
 import "firebase/database";
 import { ClientItemsHandlers, FirebaseItemHandlers } from "./firebase-handlers";
-import { CodapItem } from "./types";
+import { CodapItem, CodapItemValues, CodapObject, DBData } from "./types";
 
 const config = {
   apiKey: atob("QUl6YVN5QVNDR2k5ZldDVVgzb3JKVkI5ZDZzdkpieERIZlNSSlZB"),
@@ -22,7 +22,7 @@ const config = {
  *
  * @param obj
  */
-function removeLocalDocumentIds(obj: any) {
+function removeLocalDocumentIds(obj: CodapObject | CodapObject[]) {
   if (!obj) return;
   if (Array.isArray(obj)) {
     obj.forEach(removeLocalDocumentIds);
@@ -40,7 +40,7 @@ export class DB {
   shareRef?: firebase.database.Reference;
   firebaseItemHandlers: { [user: string]: FirebaseItemHandlers } = {};
   clientItemsHandlers: ClientItemsHandlers;
-  listeners: Array<{path: string; callback: (data: any) => void; }> = [];
+  listeners: Array<{path: string; callback: (data: DBData) => void; }> = [];
 
   unregisterPresence?: () => void;
 
@@ -57,12 +57,12 @@ export class DB {
   }
 
   getAllUsersRef() {
-    return this.shareRef && this.shareRef.child("allUsers");
+    return this.shareRef?.child("allUsers");
   }
 
   getUserItemDataRef(user: string) {
-    const itemsRef = this.shareRef && this.shareRef.child("itemData");
-    return itemsRef && itemsRef.child(user);
+    const itemsRef = this.shareRef?.child("itemData");
+    return itemsRef?.child(user);
   }
 
   createSharedTable(shareId: string, userLabel: string) {
@@ -76,7 +76,7 @@ export class DB {
     this.userLabel = userLabel;
     this.setShareRef(shareId);
     const allUsers = await this.getAllUsers();
-    if (allUsers && allUsers.val()) {
+    if (allUsers?.val()) {
       this.registerPresence(userLabel);
       return true;
     }
@@ -97,7 +97,7 @@ export class DB {
 
   // retrieves data from `shared-tables/${shareId}`
   async getAll() {
-    return this.shareRef && this.shareRef.once("value");
+    return this.shareRef?.once("value");
   }
 
   writeUserItems(userLabel: string, items: CodapItem[]) {
@@ -107,21 +107,21 @@ export class DB {
                     const { __editable__, ...others } = item.values;
                     itemMap[item.id] = others;
                     return itemMap;
-                  }, {} as { [id: string]: any }),
+                  }, {} as CodapItemValues),
             order: items.map(item => item.id)
           };
-    userItemDataRef && userItemDataRef.set(userItemData);
+    userItemDataRef?.set(userItemData);
   }
 
   async getAllUsers() {
     const allUsersRef = this.getAllUsersRef();
-    return allUsersRef && allUsersRef.once("value");
+    return allUsersRef?.once("value");
   }
 
   installUserItemListeners() {
     const allUsersRef = this.getAllUsersRef();
-    allUsersRef && allUsersRef.on("child_added", userData => {
-      const user = userData && userData.key;
+    allUsersRef?.on("child_added", userData => {
+      const user = userData?.key;
       if (user) {
         const userItemDataRef = this.getUserItemDataRef(user);
         if (userItemDataRef && (user !== this.userLabel)) {
@@ -129,8 +129,8 @@ export class DB {
         }
       }
     });
-    allUsersRef && allUsersRef.on("child_removed", userData => {
-      const user = userData && userData.key;
+    allUsersRef?.on("child_removed", userData => {
+      const user = userData?.key;
       user && this.removeItemHandlersForUser(user);
     });
   }
@@ -151,8 +151,8 @@ export class DB {
   }
 
   registerPresence(userLabel: string) {
-    const allUsersRef = this.shareRef && this.shareRef.child("allUsers");
-    const connectedRef = this.shareRef && this.shareRef.child("connectedUsers");
+    const allUsersRef = this.shareRef?.child("allUsers");
+    const connectedRef = this.shareRef?.child("connectedUsers");
     if (allUsersRef && connectedRef) {
       const time = Date.now();
       allUsersRef.child(userLabel).set(time);
@@ -170,18 +170,18 @@ export class DB {
    * Listens to data at `shared-tables/${shareId}/${path}`
    * Listeners will be removed on leaveSharedTable
    */
-  addListener(path: string, callback: (data: any) => void) {
+  addListener(path: string, callback: (data: DBData) => void) {
     if (this.shareRef) {
       this.listeners.push({path, callback});
       this.shareRef.child(path).on("value", (response) => {
-        const val = response && response.val();
+        const val = response?.val();
         callback(val);
       });
     }
   }
 
   // adds data at `shared-tables/${shareId}/${path}`
-  set(path: string, data: any) {
+  set(path: string, data: DBData) {
     if (this.shareRef) {
       removeLocalDocumentIds(data);
       this.shareRef.child(path).set(data);

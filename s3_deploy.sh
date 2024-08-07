@@ -1,4 +1,5 @@
 #!/bin/bash
+# TODO Can we delete this file now that we're using the new deploy process?
 SRC_DIR='build'
 DISTRIBUTION_ID='E3P78ES085CH6O'
 # name of branch to deploy to root of site

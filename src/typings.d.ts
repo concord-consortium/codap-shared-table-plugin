@@ -1,3 +1,3 @@
-declare module 'iframe-phone';
+declare module "iframe-phone";
 
-declare module 'randomatic';
+declare module "randomatic";

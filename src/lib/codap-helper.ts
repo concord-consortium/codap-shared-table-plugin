@@ -1,6 +1,9 @@
 import * as randomize from "randomatic";
-import codapInterface, { ClientHandler, CodapRequestResponse, IConfig } from "./CodapInterface";
-import { Attribute, Collection, DataContext, DataContextCreation, CodapItem } from "./types";
+import codapInterface, { IConfig } from "./CodapInterface";
+import {
+  Attribute, Collection, DataContext, DataContextCreation, CodapItem, CodapItemValue, CodapRequest,
+  CodapRequestResponse, CodapItemValues, CodapRequestHandler
+} from "./types";
 
 export interface ISaveState {
   personalDataKeyPrefix: string;
@@ -58,12 +61,20 @@ export class CodapHelper {
     return await codapInterface.getInteractiveState() as ISaveState;
   }
 
-  static addDataContextsListListener(callback: ClientHandler) {
-    codapInterface.on("notify", "documentChangeNotice", callback);
+  static addDataContextsListListener(callback: CodapRequestHandler) {
+    codapInterface.on({
+      actionSpec: "notify",
+      resourceSpec: "documentChangeNotice",
+      handler: callback
+    });
   }
 
-  static addDataContextChangeListener(context: DataContext, callback: ClientHandler) {
-    codapInterface.on("notify", `dataContextChangeNotice[${context.name}]`, callback);
+  static addDataContextChangeListener(context: DataContext, callback: CodapRequestHandler) {
+    codapInterface.on({
+      actionSpec: "notify",
+      resourceSpec: `dataContextChangeNotice[${context.name}]`,
+      handler: callback
+    });
   }
 
   static async getDataContextList() {
@@ -107,11 +118,11 @@ export class CodapHelper {
       dataContext = _dataContext;
     }
 
-    const cloneDataContext = (context: any) => {
+    const cloneDataContext = (context: DataContext) => {
       // list of properties to exclude
       const excludeProps = ["_categoryMap"];
       const str = JSON.stringify(context,
-                                  (key: string, value: any) => {
+                                  (key: string, value: CodapItemValue) => {
                                     return excludeProps.indexOf(key) >= 0 ? undefined : value;
                                   });
       return JSON.parse(str);
@@ -147,22 +158,22 @@ export class CodapHelper {
 
   static async configureUserCase(dataContextName: string, personalDataKey: string,
                                   personalDataLabel: string, newContext = false) {
-    const changes: any = [];
+    const changes: CodapRequest[] = [];
     let userCaseId;
-    let unsharedChanges;
+    let unsharedChanges: CodapRequest[] | undefined;
     if (!newContext) {
       // see if we have an existing shared case for this user
       const userCase = await codapInterface.sendRequest({
         action: "get",
         resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
       });
-      userCaseId = userCase && userCase.values && userCase.values[0] && userCase.values[0].id;
+      userCaseId = userCase?.values?.[0]?.id;
       if (!userCaseId) {
         // update existing items with current user information
         unsharedChanges = await this.configureUnsharedCases(dataContextName, personalDataKey, personalDataLabel);
       }
     }
-    if (unsharedChanges && unsharedChanges.length) {
+    if (unsharedChanges?.length) {
       changes.push(...unsharedChanges);
     }
     else if (userCaseId) {
@@ -203,15 +214,15 @@ export class CodapHelper {
                     }]) as CodapRequestResponse[];
     const [userItemsResult, unsharedResult] = result;
     const userItems: CodapItem[] = userItemsResult && userItemsResult.success &&
-                      userItemsResult.values && userItemsResult.values.length
+                      userItemsResult.values?.length
                         ? userItemsResult.values : [];
     // identify empty user items, i.e. items with only the required sharing values
     const emptyItems = userItems.filter(item => this.isEmptyUserItem(item));
     const nonEmptyItemCount = userItems.length - emptyItems.length;
     const unsharedCases = unsharedResult && unsharedResult.success &&
-                          unsharedResult.values && unsharedResult.values.length
+                          unsharedResult.values?.length
                             ? unsharedResult.values : [];
-    const requests: any[] = [];
+    const requests: CodapRequest[] = [];
     if (emptyItems.length && (nonEmptyItemCount || unsharedCases.length)) {
       emptyItems.forEach(item => {
                   // delete any "empty" user items as long as there are non-empty user items
@@ -221,7 +232,7 @@ export class CodapHelper {
                   });
                 });
     }
-    unsharedCases.forEach((aCase: any) => {
+    unsharedCases.forEach((aCase: CodapItem) => {
                     // apply required sharing values to currently "unshared" cases.
                     // this occurs when items are generated from other plugins, for instance.
                     requests.push({
@@ -249,7 +260,7 @@ export class CodapHelper {
     return result && result.success ? result.values : null;
   }
 
-  static async createItems(dataContextName: string, items: any) {
+  static async createItems(dataContextName: string, items: CodapItem[]) {
     await codapInterface.sendRequest({
       action: "create",
       resource: dataContextResource(dataContextName, "item"),
@@ -260,7 +271,7 @@ export class CodapHelper {
   static async createOrUpdateItems(dataContextName: string, itemValues: CodapItem[]) {
     // should eventually cache the IDs locally
     const existingItems = await this.getAllItems(dataContextName);
-    const existingIdsArray = existingItems && existingItems.map(item => item.id);
+    const existingIdsArray = existingItems?.map(item => item.id);
     const existingIdsSet = new Set(existingIdsArray || []);
     const requests = itemValues.map(item => {
                       return existingIdsSet.has(item.id)
@@ -377,7 +388,7 @@ export class CodapHelper {
 
     // we create a list of all commands needed to modify the DC, and then execute them all at once, to
     // prevent generating change events that are sent to Firebase before the DC is fully-updated
-    const changeCommands: any[] = [];
+    const changeCommands: CodapRequest[] = [];
     if (dataContext && sharedDataContext) {
       // update title
       if (dataContext.title !== sharedDataContext.title) {
@@ -459,10 +470,10 @@ export class CodapHelper {
                             ? sharedAttrMap[cid]
                             : sharedAttributes.find(attr => attr.name === origAttr.name);
         if (sharedAttr) {
-          const origAttrProps = origAttr.attr as any;
+          const origAttrProps = origAttr.attr as CodapItemValues;
           const defaultAttrProps = { formula: "", description: "", type: "", unit: "" };
-          const sharedAttrProps: any = { ...defaultAttrProps, ...sharedAttr.attr };
-          const propsToUpdate: any = {};
+          const sharedAttrProps: CodapItemValues = { ...defaultAttrProps, ...sharedAttr.attr };
+          const propsToUpdate: CodapItemValues = {};
           let changed = false;
           // tslint:disable-next-line: forin
           for (const prop in sharedAttrProps) {
@@ -583,7 +594,7 @@ export class CodapHelper {
       resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
     }) as CodapRequestResponse;
     // there should be only one such case
-    return res.success && res.values && res.values.length ? res.values[0] : null;
+    return res.success && res.values?.length ? res.values[0] : null;
   }
 
   static async getCollaboratorCases(dataContextName: string) {
@@ -595,8 +606,8 @@ export class CodapHelper {
   }
 
   static isEmptyUserItem(item: CodapItem) {
-    const { [kShareLabelName]: shareLabel, [kCollaboratorKey]: collaborator,
-            [kEditableAttrName]: editable, ...others } = item.values;
+    const { [kShareLabelName]: _shareLabel, [kCollaboratorKey]: _collaborator,
+            [kEditableAttrName]: _editable, ...others } = item.values;
     // empty if there are no values besides the required sharing attributes
     return Object.keys(others).length === 0;
   }

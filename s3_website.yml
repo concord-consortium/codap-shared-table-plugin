@@ -1,3 +1,4 @@
+# TODO Can we delete this file now that we're using the new deploy process?
 s3_id: <%= ENV['AWS_ACCESS_KEY_ID'] %>
 s3_secret: <%= ENV['AWS_SECRET_ACCESS_KEY'] %>
 s3_bucket: models-resources
