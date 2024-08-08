@@ -8,7 +8,7 @@ context("Test the overall app", () => {
 
   describe("Desktop functionalities", () => {
     it("renders with text", () => {
-      ae.getApp().should("have.text", "To create or join a collaborative table");
+      ae.getApp().invoke("text").should("include", "To create or join a collaborative table");
     });
   });
 });

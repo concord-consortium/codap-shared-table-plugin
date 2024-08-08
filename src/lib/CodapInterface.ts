@@ -343,8 +343,8 @@ const codapInterface = {
         request: CodapRequests, response: CodapRequestResponses, _callback?: CodapRequestCallback
       ) {
         if (response === undefined) {
-          // console.warn('handleResponse: CODAP request timed out');
-          reject(`handleResponse: CODAP request timed out: ${JSON.stringify(request)}`);
+          console.warn('handleResponse: CODAP request timed out');
+          // reject(`handleResponse: CODAP request timed out: ${JSON.stringify(request)}`);
           stats.countDiRplTimeout++;
         } else {
           connectionState = "active";

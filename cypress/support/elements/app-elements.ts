@@ -1,5 +1,5 @@
 export const AppElements = {
   getApp() {
-    return cy.get(".app");
+    return cy.get(".App");
   }
 };
