@@ -41,17 +41,21 @@
  *
  */
 
-import { IframePhoneRpcEndpoint } from 'iframe-phone';
+import { IframePhoneRpcEndpoint } from "iframe-phone";
+import {
+  CodapRequest, CodapRequestCallback, CodapRequestHandler, CodapRequestResponses, CodapRequests, CodapResource,
+  InteractiveFrame, InteractiveState
+} from "./types";
 
 /**
  * The CODAP Connection
  * @param {iframePhone.IframePhoneRpcEndpoint}
  */
-var connection: { call: (arg0: any, arg1: (response: any) => void) => void; } | null = null;
+let connection: { call: (arg0: CodapRequests, arg1: CodapRequestCallback) => void; } | null = null;
 
-var connectionState = 'preinit';
+let connectionState = "preinit";
 
-var stats = {
+const stats = {
   countDiReq: 0,
   countDiRplSuccess: 0,
   countDiRplFail: 0,
@@ -72,7 +76,7 @@ export interface IDimensions {
 }
 
 export interface IConfig {
-  stateHandler?: (arg0: any) => void;
+  stateHandler?: (state: InteractiveState) => void;
   customInteractiveStateHandler?: boolean;
   name?: string;
   title?: string;
@@ -87,19 +91,19 @@ export interface IConfig {
   respectEditableItemAttribute?: boolean;
 }
 
-var config: IConfig | null = null;
+let config: IConfig | null = null;
 
-export interface CodapRequestResponse {
-  success: boolean;
-  values?: any;
+export interface HandlerSpec {
+  actionSpec?: string;
+  resourceSpec: string;
+  operation?: string;
+  handler: CodapRequestHandler;
 }
-
-export type CodapApiResponse = CodapRequestResponse | CodapRequestResponse[];
 
 /**
  * A cached copy of the initial interactiveFrame response
  */
-var initialInteractiveFrame: any = {};
+let initialInteractiveFrame: InteractiveFrame = {};
 
 /**
  * A serializable object shared with CODAP. This is saved as a part of the
@@ -111,56 +115,49 @@ var initialInteractiveFrame: any = {};
  * initiated by the init method if CODAP was started from a previously saved
  * document.
  */
-var interactiveState = {};
-
-export interface ClientNotification {
-  action: string;
-  resource: string;
-  values: any;
-}
-export type ClientHandler = (notification: ClientNotification) => void;
+let interactiveState = {};
 
 /**
  * A list of subscribers to messages from CODAP
  * @param {[{actionSpec: {RegExp}, resourceSpec: {RegExp}, handler: {function}}]}
  */
-var notificationSubscribers: { actionSpec: string; resourceSpec: any; operation: any; handler: any; }[] = [];
+const notificationSubscribers: HandlerSpec[] = [];
 
-function matchResource(resourceName: any, resourceSpec: string) {
-  return resourceSpec === '*' || resourceName === resourceSpec;
+function matchResource(resourceName: string, resourceSpec: string) {
+  return resourceSpec === "*" || resourceName === resourceSpec;
 }
 
-function notificationHandler (request: { action: any; resource: any; values: any; }, callback: (arg0: { success: boolean; }) => void) {
-  var action = request.action;
-  var resource = request.resource;
-  var requestValues = request.values;
-  var returnMessage = {success: true};
+function notificationHandler(request: CodapRequest, callback: CodapRequestCallback) {
+  const { action, resource } = request;
+  let requestValues = request.values;
+  let returnMessage = {success: true};
 
-  connectionState = 'active';
+  connectionState = "active";
   stats.countCodapReq += 1;
   stats.timeCodapLastReq = new Date();
   if (!stats.timeCodapFirstReq) {
     stats.timeCodapFirstReq = stats.timeCodapLastReq;
   }
 
-  if (action === 'notify' && !Array.isArray(requestValues)) {
+  if (action === "notify" && !Array.isArray(requestValues)) {
     requestValues = [requestValues];
   }
 
-  var handled = false;
-  var success = true;
+  let handled = false;
+  let success = true;
 
-  if ((action === 'get') || (action === 'update')) {
+  if ((action === "get") || (action === "update")) {
     // get assumes only one subscriber because it expects only one response.
     notificationSubscribers.some(function (subscription) {
-      var result = false;
+      let result = false;
       try {
         if ((subscription.actionSpec === action) &&
             matchResource(resource, subscription.resourceSpec)) {
-          var rtn = subscription.handler(request);
-          if (rtn && rtn.success) { stats.countCodapRplSuccess++; } else{ stats.countCodapRplFail++; }
-          returnMessage = rtn;
-          result = true;
+          Promise.resolve(subscription.handler(request)).then(rtn => {
+            if (rtn?.success) { stats.countCodapRplSuccess++; } else { stats.countCodapRplFail++; }
+            returnMessage = rtn;
+            result = true;
+          });
         }
       } catch (ex) {
         // console.log('DI Plugin notification handler exception: ' + ex);
@@ -171,8 +168,8 @@ function notificationHandler (request: { action: any; resource: any; values: any
     if (!handled) {
       stats.countCodapUnhandledReq++;
     }
-  } else if (action === 'notify') {
-    requestValues.forEach(function (value: { operation: any; }) {
+  } else if (action === "notify") {
+    requestValues.forEach(function (value: { operation: string; }) {
       notificationSubscribers.forEach(function (subscription) {
         // pass this notification to matching subscriptions
         handled = false;
@@ -180,11 +177,11 @@ function notificationHandler (request: { action: any; resource: any; values: any
             matchResource(resource, subscription.resourceSpec) &&
             (!subscription.operation ||
               ((subscription.operation === value.operation) && subscription.handler))) {
-          var rtn = subscription.handler(
-              {action: action, resource: resource, values: value});
-          if (rtn && rtn.success) { stats.countCodapRplSuccess++; } else{ stats.countCodapRplFail++; }
-          success = (success && (rtn ? rtn.success : false));
-          handled = true;
+          Promise.resolve(subscription.handler({action, resource, values: value})).then(rtn => {
+            if (rtn?.success) { stats.countCodapRplSuccess++; } else { stats.countCodapRplFail++; }
+            success = (success && (rtn ? rtn.success : false));
+            handled = true;
+          });
         }
       });
       if (!handled) {
@@ -201,7 +198,7 @@ const codapInterface = {
   /**
    * Connection statistics
    */
-  stats: stats,
+  stats,
 
   /**
    * Initialize connection.
@@ -216,13 +213,15 @@ const codapInterface = {
    * @param iCallback {function(interactiveState)}
    * @return {Promise} Promise of interactiveState;
    */
-  init: function (iConfig: IConfig, iCallback?: (arg0: any) => void) {
-    var this_ = this;
-    return new Promise(function (resolve: (arg0: any) => void, reject: { (arg0: string): void; (arg0: any): void; }) {
-      function getFrameRespHandler(resp: { values: { error: any; savedState: any }; success: boolean }[]) {
-        var success = resp && resp[1] && resp[1].success;
-        var receivedFrame = success && resp[1].values;
-        var savedState = receivedFrame && receivedFrame.savedState;
+  init(iConfig: IConfig, iCallback?: (state: InteractiveState) => void) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const this_ = this;
+    return new Promise(function (resolve: (state: InteractiveState) => void, reject: (error: string) => void) {
+      function getFrameRespHandler(resps: CodapRequestResponses) {
+        const resp = Array.isArray(resps) ? resps : [resps]
+        const success = resp?.[1]?.success;
+        const receivedFrame = success && resp[1].values;
+        const savedState = receivedFrame?.savedState;
         this_.updateInitialInteractiveFrame(receivedFrame);
         this_.updateInteractiveState(savedState);
         if (success) {
@@ -233,11 +232,9 @@ const codapInterface = {
           resolve(savedState);
         } else {
           if (!resp) {
-            reject('Connection request to CODAP timed out.');
+            reject("Connection request to CODAP timed out.");
           } else {
-            reject(
-                (resp[1] && resp[1].values && resp[1].values.error) ||
-                'unknown failure');
+            reject(resp[1]?.values?.error || "unknown failure");
           }
         }
         if (iCallback) {
@@ -245,11 +242,11 @@ const codapInterface = {
         }
       }
 
-      var getFrameReq = {action: 'get', resource: 'interactiveFrame'};
-      var { stateHandler, customInteractiveStateHandler, ...newFrame } = iConfig;
-      var updateFrameReq = {
-        action: 'update',
-        resource: 'interactiveFrame',
+      const getFrameReq = {action: "get", resource: "interactiveFrame"};
+      const { stateHandler: _stateHandler, customInteractiveStateHandler, ...newFrame } = iConfig;
+      const updateFrameReq = {
+        action: "update",
+        resource: "interactiveFrame",
         values: newFrame
       };
 
@@ -260,15 +257,19 @@ const codapInterface = {
           notificationHandler, "data-interactive", window.parent);
 
       if (!customInteractiveStateHandler) {
-        this_.on('get', 'interactiveState', function () {
-          return ({success: true, values: this_.getInteractiveState()});
+        this_.on({
+          actionSpec: "get",
+          resourceSpec: "interactiveState",
+          handler() {
+            return ({success: true, values: this_.getInteractiveState()});
+          }
         });
       }
 
       // console.log('sending interactiveState: ' + JSON.stringify(this_.getInteractiveState));
       // update, then get the interactiveFrame.
       return this_.sendRequest([updateFrameReq, getFrameReq])
-        .then(getFrameRespHandler as any, reject);
+        .then(getFrameRespHandler, reject);
     });
   },
 
@@ -276,13 +277,13 @@ const codapInterface = {
    * Current known state of the connection
    * @param {'preinit' || 'init' || 'active' || 'inactive' || 'closed'}
    */
-  getConnectionState: function () {return connectionState;},
+  getConnectionState() { return connectionState; },
 
-  getStats: function () {
+  getStats() {
     return stats;
   },
 
-  getConfig: function () {
+  getConfig() {
     return config;
   },
 
@@ -291,7 +292,7 @@ const codapInterface = {
    *
    * @returns {object}
    */
-  getInitialInteractiveFrame: function () {
+  getInitialInteractiveFrame() {
     return initialInteractiveFrame;
   },
 
@@ -300,7 +301,7 @@ const codapInterface = {
    *
    * @returns {object}
    */
-  getInteractiveState: function () {
+  getInteractiveState() {
     return interactiveState;
   },
 
@@ -308,7 +309,7 @@ const codapInterface = {
    * Updates the interactive state.
    * @param iInteractiveState {Object}
    */
-  updateInitialInteractiveFrame: function (iInteractiveFrame: any) {
+  updateInitialInteractiveFrame(iInteractiveFrame: InteractiveFrame) {
     initialInteractiveFrame = Object.assign(initialInteractiveFrame, iInteractiveFrame);
   },
 
@@ -316,11 +317,11 @@ const codapInterface = {
    * Updates the interactive state.
    * @param iInteractiveState {Object}
    */
-  updateInteractiveState: function (iInteractiveState: any) {
+  updateInteractiveState(iInteractiveState: InteractiveState) {
     interactiveState = Object.assign(interactiveState, iInteractiveState);
   },
 
-  destroy: function () {
+  destroy() {
     // todo : more to do?
     connection = null;
   },
@@ -336,28 +337,37 @@ const codapInterface = {
    *
    * @return {Promise} The promise of the response from CODAP.
    */
-  sendRequest: function (message: any, callback?: any) {
-    return new Promise<CodapApiResponse>(function (resolve, reject){
-      function handleResponse (request: any, response: {success: boolean} | undefined, callback: (arg0: any, arg1: any) => void) {
+  sendRequest(message: CodapRequests, callback?: CodapRequestCallback) {
+    return new Promise<CodapRequestResponses>(function (resolve, reject) {
+      function handleResponse(
+        request: CodapRequests, response: CodapRequestResponses, _callback?: CodapRequestCallback
+      ) {
         if (response === undefined) {
-          // console.warn('handleResponse: CODAP request timed out');
-          reject('handleResponse: CODAP request timed out: ' + JSON.stringify(request));
+          console.warn('handleResponse: CODAP request timed out');
+          // reject(`handleResponse: CODAP request timed out: ${JSON.stringify(request)}`);
           stats.countDiRplTimeout++;
         } else {
-          connectionState = 'active';
-          if (response.success) { stats.countDiRplSuccess++; } else { stats.countDiRplFail++; }
+          connectionState = "active";
+          const responses = Array.isArray(response) ? response : [response]
+          responses.forEach(_response => {
+            if (_response.success) {
+              stats.countDiRplSuccess++;
+            } else {
+              stats.countDiRplFail++;
+            }
+          })
           resolve(response);
         }
-        if (callback) {
-          callback(response, request);
+        if (_callback) {
+          _callback(response, request);
         }
       }
       switch (connectionState) {
-        case 'closed': // log the message and ignore
+        case "closed": // log the message and ignore
           // console.warn('sendRequest on closed CODAP connection: ' + JSON.stringify(message));
-          reject('sendRequest on closed CODAP connection: ' + JSON.stringify(message));
+          reject(`sendRequest on closed CODAP connection: ${JSON.stringify(message)}`);
           break;
-        case 'preinit': // warn, but issue request.
+        case "preinit": // warn, but issue request.
           // console.log('sendRequest on not yet initialized CODAP connection: ' +
               // JSON.stringify(message));
           /* falls through */
@@ -369,7 +379,7 @@ const codapInterface = {
               stats.timeCodapFirstReq = stats.timeDiLastReq;
             }
 
-            connection.call(message, function (response: any) {
+            connection.call(message, function (response: CodapRequestResponses) {
               handleResponse(message, response, callback);
             });
           } else {
@@ -389,26 +399,14 @@ const codapInterface = {
    *   'move', 'resize', .... If not specified, all operations will be reported.
    * @param handler {Function} A handler to receive the notifications.
    */
-  on: function (actionSpec: string, resourceSpec: string, operation: string | ClientHandler, handler?: ClientHandler) {
-    var as = 'notify',
-        rs,
-        os,
-        hn;
-    var args = Array.prototype.slice.call(arguments);
-    if (['get', 'update', 'notify'].indexOf(args[0]) >= 0) {
-      as = args.shift();
-    }
-    rs = args.shift();
-    if (typeof args[0] !== 'function') {
-      os = args.shift();
-    }
-    hn = args.shift();
+  on({ actionSpec, resourceSpec, operation, handler }: HandlerSpec) {
+    const as = actionSpec ?? "notify";
 
     const subscriber = {
       actionSpec: as,
-      resourceSpec: rs,
-      operation: os,
-      handler: hn
+      resourceSpec,
+      operation,
+      handler
     };
 
     notificationSubscribers.push(subscriber);
@@ -423,13 +421,13 @@ const codapInterface = {
    * @param {String} iResource
    * @return {Object}
    */
-  parseResourceSelector: function (iResource: string) {
-    var selectorRE = /([A-Za-z0-9_-]+)\[([^\]]+)]/;
-    var result: any = {};
-    var selectors = iResource.split('.');
+  parseResourceSelector(iResource: string) {
+    const selectorRE = /([A-Za-z0-9_-]+)\[([^\]]+)]/;
+    const result: CodapResource = {};
+    const selectors = iResource.split(".");
     selectors.forEach(function (selector: string) {
-      var resourceType, resourceName;
-      var match = selectorRE.exec(selector);
+      let resourceType, resourceName;
+      const match = selectorRE.exec(selector);
       if (selectorRE.test(selector) && match) {
         resourceType = match[1];
         resourceName = match[2];
