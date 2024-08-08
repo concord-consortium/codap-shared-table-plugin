@@ -227,9 +227,9 @@ export default class App extends Component {
 
     this.handleCreatedItems(notification);
 
-    const { shareId, selectedDataContext, personalDataKey, personalDataLabel } = this.state;
+    const { isInProcessOfSharing, shareId, selectedDataContext, personalDataKey, personalDataLabel } = this.state;
 
-    if (shareId) {
+    if (!isInProcessOfSharing && shareId) {
       this.debounceDataContextResponse(shareId, selectedDataContext, personalDataKey, personalDataLabel);
     }
 
