@@ -218,11 +218,10 @@ const codapInterface = {
     const this_ = this;
     return new Promise(function (resolve: (state: InteractiveState) => void, reject: (error: string) => void) {
       function getFrameRespHandler(resps: CodapRequestResponses) {
-      // function getFrameRespHandler(resp: { values: { error?: string; savedState?: InteractiveState }; success: boolean }[]) {
         const resp = Array.isArray(resps) ? resps : [resps]
         const success = resp?.[1]?.success;
         const receivedFrame = success && resp[1].values;
-        const savedState = receivedFrame && receivedFrame.savedState;
+        const savedState = receivedFrame?.savedState;
         this_.updateInitialInteractiveFrame(receivedFrame);
         this_.updateInteractiveState(savedState);
         if (success) {
@@ -261,7 +260,7 @@ const codapInterface = {
         this_.on({
           actionSpec: "get",
           resourceSpec: "interactiveState",
-          handler: function () {
+          handler() {
             return ({success: true, values: this_.getInteractiveState()});
           }
         });
@@ -278,7 +277,7 @@ const codapInterface = {
    * Current known state of the connection
    * @param {'preinit' || 'init' || 'active' || 'inactive' || 'closed'}
    */
-  getConnectionState() {return connectionState;},
+  getConnectionState() { return connectionState; },
 
   getStats() {
     return stats;
@@ -339,13 +338,13 @@ const codapInterface = {
    * @return {Promise} The promise of the response from CODAP.
    */
   sendRequest(message: CodapRequests, callback?: CodapRequestCallback) {
-    return new Promise<CodapRequestResponses>(function (resolve, reject){
+    return new Promise<CodapRequestResponses>(function (resolve, reject) {
       function handleResponse(
         request: CodapRequests, response: CodapRequestResponses, _callback?: CodapRequestCallback
       ) {
         if (response === undefined) {
           // console.warn('handleResponse: CODAP request timed out');
-          reject("handleResponse: CODAP request timed out: " + JSON.stringify(request));
+          reject(`handleResponse: CODAP request timed out: ${JSON.stringify(request)}`);
           stats.countDiRplTimeout++;
         } else {
           connectionState = "active";
@@ -366,7 +365,7 @@ const codapInterface = {
       switch (connectionState) {
         case "closed": // log the message and ignore
           // console.warn('sendRequest on closed CODAP connection: ' + JSON.stringify(message));
-          reject("sendRequest on closed CODAP connection: " + JSON.stringify(message));
+          reject(`sendRequest on closed CODAP connection: ${JSON.stringify(message)}`);
           break;
         case "preinit": // warn, but issue request.
           // console.log('sendRequest on not yet initialized CODAP connection: ' +

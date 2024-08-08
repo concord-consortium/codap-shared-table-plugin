@@ -19,9 +19,9 @@ export interface AttributeMeta {
 }
 
 const dataContextResource = (contextName: string, subKey?: string) =>
-                              `dataContext[${contextName}]${subKey ? "." + subKey : ""}`;
+                              `dataContext[${contextName}]${subKey ? `. ${subKey}` : ""}`;
 const collectionResource = (contextName: string, collectionName: string, subKey?: string) =>
-                              `dataContext[${contextName}].collection[${collectionName}]${subKey ? "." + subKey : ""}`;
+                              `dataContext[${contextName}].collection[${collectionName}]${subKey ? `. ${subKey}` : ""}`;
 const collaboratorsResource = (contextName: string, subKey: string) =>
                               collectionResource(contextName, "Collaborators", subKey);
 const attributeResource = (contextName: string, collectionName: string, attributeName: string) =>
