@@ -15,11 +15,11 @@ jobs:
         run: npm run build
       - name: Run Tests
         run: npm run test:coverage -- --runInBand
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          flags: jest
-          token: ${{ secrets.CODECOV_TOKEN }}
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     flags: jest
+      #     token: ${{ secrets.CODECOV_TOKEN }}
   cypress:
     runs-on: ubuntu-latest
     strategy:
@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         # run 3 copies of the current job in parallel
-        containers: [1, 2, 3]
+        containers: [1]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,15 +51,15 @@ jobs:
           # so far we've been using a webpack coverage-istanbul-loader for this
           # but there has been work on using the code coverage support in the browser directly,
           # which should be much faster
-          CODE_COVERAGE: true
+          CODE_COVERAGE: ${{ !!secrets.CYPRESS_RECORD_KEY }}
           # Also turn on the code coverage tasks in cypress itself, these are disabled
           # by default.
-          CYPRESS_coverage: true
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          flags: cypress
-          token: ${{ secrets.CODECOV_TOKEN }}
+          CYPRESS_coverage: ${{ !!secrets.CYPRESS_RECORD_KEY }}
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     flags: cypress
+      #     token: ${{ secrets.CODECOV_TOKEN }}
   s3-deploy:
     name: S3 Deploy
     needs:
