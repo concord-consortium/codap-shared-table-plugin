@@ -232,15 +232,19 @@ export class CodapHelper {
                   });
                 });
     }
-    unsharedCases.forEach((aCase: CodapItem) => {
-                    // apply required sharing values to currently "unshared" cases.
-                    // this occurs when items are generated from other plugins, for instance.
-                    requests.push({
-                      action: "update",
-                      resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
-                      values: { values: { [kShareLabelName]: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
-                    });
-                  });
+    // apply required sharing values to currently "unshared" cases.
+    // this occurs when items are generated from other plugins, for instance.
+    if (unsharedCases.length > 0) {
+      const values = { [kShareLabelName]: personalDataLabel, [kCollaboratorKey]: personalDataKey };
+      requests.push({
+        action: "update",
+        resource: collaboratorsResource(dataContextName, `case`),
+        values: unsharedCases.map((aCase: CodapItem) => ({
+          id: aCase.id,
+          values
+        }))
+      });
+    }
     return requests;
   }
 
