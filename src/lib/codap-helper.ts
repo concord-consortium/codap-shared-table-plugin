@@ -232,15 +232,19 @@ export class CodapHelper {
                   });
                 });
     }
-    unsharedCases.forEach((aCase: CodapItem) => {
-                    // apply required sharing values to currently "unshared" cases.
-                    // this occurs when items are generated from other plugins, for instance.
-                    requests.push({
-                      action: "update",
-                      resource: collaboratorsResource(dataContextName, `caseByID[${aCase.id}]`),
-                      values: { values: { [kShareLabelName]: personalDataLabel, [kCollaboratorKey]: personalDataKey } }
-                    });
-                  });
+    // apply required sharing values to currently "unshared" cases.
+    // this occurs when items are generated from other plugins, for instance.
+    if (unsharedCases.length > 0) {
+      const values = { [kShareLabelName]: personalDataLabel, [kCollaboratorKey]: personalDataKey };
+      requests.push({
+        action: "update",
+        resource: collaboratorsResource(dataContextName, `case`),
+        values: unsharedCases.map((aCase: CodapItem) => ({
+          id: aCase.id,
+          values
+        }))
+      });
+    }
     return requests;
   }
 
@@ -260,12 +264,16 @@ export class CodapHelper {
     return result && result.success ? result.values : null;
   }
 
-  static async createItems(dataContextName: string, items: CodapItem[]) {
-    await codapInterface.sendRequest({
+  static getCreateItemRequest(dataContextName: string, items: CodapItem[]) {
+    return {
       action: "create",
       resource: dataContextResource(dataContextName, "item"),
       values: items
-    });
+    };
+  }
+
+  static async createItems(dataContextName: string, items: CodapItem[]) {
+    await codapInterface.sendRequest(this.getCreateItemRequest(dataContextName, items));
   }
 
   static async createOrUpdateItems(dataContextName: string, itemValues: CodapItem[]) {
@@ -273,19 +281,26 @@ export class CodapHelper {
     const existingItems = await this.getAllItems(dataContextName);
     const existingIdsArray = existingItems?.map(item => item.id);
     const existingIdsSet = new Set(existingIdsArray || []);
-    const requests = itemValues.map(item => {
-                      return existingIdsSet.has(item.id)
-                        ? {
-                            action: "update",
-                            resource: dataContextResource(dataContextName, `itemByID[${item.id}]`),
-                            values: item.values
-                          }
-                        : {
-                            action: "create",
-                            resource: dataContextResource(dataContextName, "item"),
-                            values: { id: item.id, values: item.values }
-                          };
-                      });
+    const createItems: CodapItem[] = [];
+    const updateItems: CodapItem[] = [];
+    itemValues.forEach(item => {
+      if (existingIdsSet.has(item.id)) {
+        updateItems.push(item);
+      } else {
+        createItems.push(item);
+      }
+    })
+    const requests: CodapRequest[] = [];
+    if (updateItems.length > 0) {
+      requests.push({
+        action: "update",
+        resource: dataContextResource(dataContextName, `item`),
+        values: updateItems.map(item => ({ id: item.id, ...item.values }))
+      });
+    }
+    if (createItems.length > 0) {
+      requests.push(this.getCreateItemRequest(dataContextName, createItems));
+    }
     return codapInterface.sendRequest(requests);
   }
 
