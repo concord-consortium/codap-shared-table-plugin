@@ -224,13 +224,12 @@ export class CodapHelper {
                             ? unsharedResult.values : [];
     const requests: CodapRequest[] = [];
     if (emptyItems.length && (nonEmptyItemCount || unsharedCases.length)) {
-      emptyItems.forEach(item => {
-                  // delete any "empty" user items as long as there are non-empty user items
-                  requests.push({
-                    action: "delete",
-                    resource: collaboratorsResource(dataContextName, `itemByID[${item.id}]`),
-                  });
-                });
+      // delete any "empty" user items as long as there are non-empty user items
+      requests.push({
+        action: "delete",
+        resource: collaboratorsResource(dataContextName, `item`),
+        values: emptyItems.map(item => ({ id: item.id }))
+      })
     }
     // apply required sharing values to currently "unshared" cases.
     // this occurs when items are generated from other plugins, for instance.
@@ -305,11 +304,11 @@ export class CodapHelper {
   }
 
   static async removeItems(dataContextName: string, itemValues: CodapItem[]) {
-    const requests = itemValues.map(item => ({
-            action: "delete",
-            resource: dataContextResource(dataContextName, `itemByID[${item.id}]`)
-          }));
-    return codapInterface.sendRequest(requests);
+    return codapInterface.sendRequest({
+      action: "delete",
+      resource: dataContextResource(dataContextName, `item`),
+      values: itemValues.map(item => ({ id: item.id }))
+    });
   }
 
   static async addNewCollaborationCollections(dataContextName: string, personalDataKey: string,

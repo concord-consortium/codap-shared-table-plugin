@@ -17,7 +17,8 @@ export class FirebaseItemHandlers {
   hasReceivedInitialItems: boolean = false;
   orderedItemIds: string[] = [];
   itemIds: Set<string> = new Set();
-  queuedItems: CodapItem[] = [];
+  addItemsQueue: CodapItem[] = [];
+  removeItemsQueue: CodapItem[] = [];
 
   constructor(user: string, userItemDataRef: firebase.database.Reference, clientHandlers: ClientItemsHandlers) {
     this.user = user;
@@ -61,24 +62,32 @@ export class FirebaseItemHandlers {
   };
 
   sortedQueuedItems = () => {
-    if (this.queuedItems.length <= 1) return this.queuedItems;
+    if (this.addItemsQueue.length <= 1) return this.addItemsQueue;
     const idIndexMap: { [id: string]: number } = {};
     this.orderedItemIds.forEach((id, index) => idIndexMap[id] = index);
-    this.queuedItems.sort((a, b) => idIndexMap[a.id] - idIndexMap[b.id]);
-    return this.queuedItems;
+    this.addItemsQueue.sort((a, b) => idIndexMap[a.id] - idIndexMap[b.id]);
+    return this.addItemsQueue;
   };
 
-  // When a batch of cases are added at once, we get multiple child_added
+  // When a batch of cases are added or removed at once, we get multiple child_added or child_removed
   // notifications and a single update to the ordered IDs array in some order.
-  // We queue the new items until we have the number of items that matches the
-  // ordered IDs array and then add the new items in the correct order as a batch.
-  addQueuedItemsIfSynced = () => {
-    if (this.queuedItems.length &&
-        (this.itemIds.size + this.queuedItems.length === this.orderedItemIds.length)) {
-      const items = this.sortedQueuedItems();
-      this.clientHandlers.itemsAdded(this.user, items);
-      items.forEach(item => this.itemIds.add(item.id));
-      this.queuedItems = [];
+  // We queue the new/deleted items until we have the number of items that matches the
+  // ordered IDs array and then add/remove the items in the correct order as a batch.
+  handleQueuedItemsIfSynced = () => {
+    const sizeWithQueues = this.itemIds.size + this.addItemsQueue.length - this.removeItemsQueue.length;
+    if ((this.addItemsQueue.length || this.removeItemsQueue.length) &&
+        sizeWithQueues === this.orderedItemIds.length) {
+      if (this.addItemsQueue.length) {
+        const items = this.sortedQueuedItems();
+        this.clientHandlers.itemsAdded(this.user, items);
+        items.forEach(item => this.itemIds.add(item.id));
+        this.addItemsQueue = [];
+      }
+      if (this.removeItemsQueue.length) {
+        this.clientHandlers.itemsRemoved(this.user, this.removeItemsQueue);
+        this.removeItemsQueue.forEach(item => this.itemIds.delete(item.id));
+        this.removeItemsQueue = [];
+      }
     }
   };
 
@@ -87,8 +96,8 @@ export class FirebaseItemHandlers {
     const itemValues = data && data.val() as CodapItemValues;
     if (data && itemValues) {
       const item: CodapItem = { id: data.key as string, values: itemValues };
-      this.queuedItems.push(item);
-      this.addQueuedItemsIfSynced();
+      this.addItemsQueue.push(item);
+      this.handleQueuedItemsIfSynced();
     }
   };
 
@@ -104,8 +113,8 @@ export class FirebaseItemHandlers {
     const itemValues = data && data.val() as CodapItemValues;
     if (data && itemValues) {
       const item: CodapItem = { id: data.key as string, values: itemValues };
-      this.clientHandlers.itemsRemoved(this.user, [item]);
-      this.itemIds.delete(item.id);
+      this.removeItemsQueue.push(item);
+      this.handleQueuedItemsIfSynced();
     }
   };
 
@@ -113,7 +122,7 @@ export class FirebaseItemHandlers {
     const order = data?.val();
     if (order) {
       this.orderedItemIds = order;
-      this.addQueuedItemsIfSynced();
+      this.handleQueuedItemsIfSynced();
     }
   };
 }
