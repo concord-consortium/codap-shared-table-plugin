@@ -296,6 +296,10 @@ const codapInterface = {
     return initialInteractiveFrame;
   },
 
+  getCodapVersion() {
+    return this.getInitialInteractiveFrame().codapVersion;
+  },
+
   /**
    * Returns the interactive state.
    *
