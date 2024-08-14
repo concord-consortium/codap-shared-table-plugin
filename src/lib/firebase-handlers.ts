@@ -57,7 +57,7 @@ export class FirebaseItemHandlers {
       this.clientHandlers.itemsAdded(this.user, items);
 
       this.orderedItemIds = itemData.order;
-      items.forEach(item => this.itemIds.add(item.id));
+      items.forEach(item => this.itemIds.add(`${item.id}`));
     }
   };
 
@@ -80,12 +80,12 @@ export class FirebaseItemHandlers {
       if (this.addItemsQueue.length) {
         const items = this.sortedQueuedItems();
         this.clientHandlers.itemsAdded(this.user, items);
-        items.forEach(item => this.itemIds.add(item.id));
+        items.forEach(item => this.itemIds.add(`${item.id}`));
         this.addItemsQueue = [];
       }
       if (this.removeItemsQueue.length) {
         this.clientHandlers.itemsRemoved(this.user, this.removeItemsQueue);
-        this.removeItemsQueue.forEach(item => this.itemIds.delete(item.id));
+        this.removeItemsQueue.forEach(item => this.itemIds.delete(`${item.id}`));
         this.removeItemsQueue = [];
       }
     }
