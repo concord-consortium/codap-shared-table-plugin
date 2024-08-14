@@ -314,7 +314,6 @@ export class CodapHelper {
   }
 
   static async removeItems(dataContextName: string, itemValues: CodapItem[]) {
-    console.log(`--- removeItems`, codapInterface.getCodapVersion())
     if (codapInterface.getCodapVersion()) {
       // Codap v3 (when codapVersion began to be sent) supports batched delete item requests
       return codapInterface.sendRequest({
