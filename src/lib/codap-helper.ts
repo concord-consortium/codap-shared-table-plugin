@@ -167,7 +167,7 @@ export class CodapHelper {
         action: "get",
         resource: collaboratorsResource(dataContextName, `caseSearch[${kCollaboratorKey}==${personalDataKey}]`)
       });
-      userCaseId = userCase?.values?.[0]?.id;
+      userCaseId = userCase.values?.[0]?.id;
       if (!userCaseId) {
         // update existing items with current user information
         unsharedChanges = await this.configureUnsharedCases(dataContextName, personalDataKey, personalDataLabel);
@@ -333,22 +333,7 @@ export class CodapHelper {
   static async addNewCollaborationCollections(dataContextName: string, personalDataKey: string,
       personalDataLabel: string, addEmptyDataCollection: boolean) {
 
-    const collections: Collection[] = [
-      {
-        name: "Collaborators",
-        title: "List of collaborators",
-        parent: "_root_",
-        labels: {
-          singleCase: "name",
-          pluralCase: "names"
-        },
-        attrs: [
-          {name: kShareLabelName, editable: false, renameable: false, deleteable: false},
-          {name: kCollaboratorKey, editable: false, renameable: false, deleteable: false, hidden: true},
-          editableAttributeSpec(personalDataKey)
-        ]
-      }
-    ];
+    const collections: Collection[] = [];
 
     const collaboratorsCollection = await codapInterface.sendRequest({
                                       action: "get",
@@ -366,8 +351,8 @@ export class CodapHelper {
           pluralCase: "names"
         },
         attrs: [
-          {name: "Name", editable: false, renameable: false, deleteable: false},
-          {name: kCollaboratorKey, editable: false, renameable: false, deleteable: false, hidden: false},
+          {name: kShareLabelName, editable: false, renameable: false, deleteable: false},
+          {name: kCollaboratorKey, editable: false, renameable: false, deleteable: false, hidden: true},
           editableAttributeSpec(personalDataKey)
         ]
       });
@@ -638,11 +623,22 @@ export class CodapHelper {
     return res.success ? res.values : [];
   }
 
-  static isEmptyUserItem(item: CodapItem) {
+  // Returns all values of the item except from the required sharing attributes
+  static getItemOtherValues(item: CodapItem) {
     const { [kShareLabelName]: _shareLabel, [kCollaboratorKey]: _collaborator,
             [kEditableAttrName]: _editable, ...others } = item.values;
+    return others;
+  }
+
+  static isEmptyUserItem(item: CodapItem) {
+    const values = this.getItemOtherValues(item);
     // empty if there are no values besides the required sharing attributes
-    return Object.keys(others).length === 0;
+    return Object.keys(values).length === 0;
+  }
+
+  static isValuelessUserItem(item: CodapItem) {
+    const values = this.getItemOtherValues(item);
+    return !Object.keys(values).some(key => !!values[key]);
   }
 
   static async moveUserItemsToLast(dataContextName: string, personalDataKey: string) {
