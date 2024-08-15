@@ -257,6 +257,13 @@ export default class App extends Component {
 
   async writeUserItems(selectedDataContext: string, personalDataKey: string) {
     const items = await Codap.getItemsOfCollaborator(selectedDataContext, personalDataKey);
+
+    // Remove the first item if it has no values, i.e. the placeholder item for this user
+    if (items.length > 1 && Codap.isValuelessUserItem(items[0])) {
+      await Codap.removeItems(selectedDataContext, [items[0]]);
+      items.shift();
+    }
+    
     // write non-empty user items to firebase
     database.writeUserItems(personalDataKey, items.filter(item => !Codap.isEmptyUserItem(item)));
     return items;
