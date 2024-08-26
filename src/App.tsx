@@ -12,12 +12,13 @@ import { DataContext, CodapItem, CodapRequest } from "./lib/types";
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = pkg.version;
 const kInitialDimensions = {
-  width: 350,
-  height: 400
+  width: 450,
+  height: 325
 };
+
 const kSharedDimensions = {
-  width: 350,
-  height: 200
+  width: 400,
+  height: 350
 };
 
 const kShareIdLength = 6;
@@ -35,6 +36,10 @@ interface IState extends ISaveState {
   joinShareId: string;
   isInProcessOfSharing: boolean;
   showJoinShareError: boolean;
+  allowOthersToJoin?: boolean;
+  joinOtherTable?: boolean;
+  mergeTable?: boolean;
+  createNewTable?: boolean;
 }
 
 let database: DB;
@@ -52,7 +57,7 @@ export default class App extends Component {
     lastSelectedDataContext: "",
     joinShareId: "",
     isInProcessOfSharing: false,
-    showJoinShareError: false
+    showJoinShareError: false,
   };
 
   public componentDidMount() {
@@ -92,53 +97,126 @@ export default class App extends Component {
 
   renderForm() {
     const { availableDataContexts, selectedDataContext, lastSelectedDataContext,
-            personalDataLabel, lastPersonalDataLabel, joinShareId, isInProcessOfSharing } = this.state;
+            personalDataLabel, lastPersonalDataLabel, joinShareId,
+          allowOthersToJoin, joinOtherTable, mergeTable, createNewTable } = this.state;
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
     const selectedContextOption = selectedDataContext || lastSelectedDataContext || kNewSharedTable;
-    const readyToInitiateShare = (!!personalDataLabel || !!lastPersonalDataLabel) && !isInProcessOfSharing;
-    const readyToJoinShare = readyToInitiateShare && (joinShareId.length === kShareIdLength);
+
+    const showFirstStep = !allowOthersToJoin && !joinOtherTable && !mergeTable && !createNewTable;
+    const showFirstAllowOthersToJoinOptions = allowOthersToJoin && !joinOtherTable && !mergeTable && !createNewTable;
 
     return (
       <div className="App">
-        To create or join a collaborative table
-        <ol>
-          <li>
-            Select a table to share <strong>or</strong> create a new one
+        {showFirstStep &&
+          <div className="form-container button-stack">
             <div>
-              <select value={selectedContextOption} onChange={this.handleDataContextChange}>
-                { availableContextOptions }
-                <option value={kNewSharedTable}>Create new table</option>
-              </select>
+              <button onClick={() => this.setState({ allowOthersToJoin: true })}>
+                Allow others to join your table
+              </button>
             </div>
-          </li>
-          <li>
-            Provide a name or label for grouping
             <div>
+              ----- or -----
+            </div>
+            <div>
+              <button onClick={() => this.setState({ joinOtherTable: true })}>
+                {"Join someone else's table"}
+              </button>
+            </div>
+          </div>
+        }
+        { joinOtherTable &&
+          <div className="form-container">
+            <div className="input-row">
+              <div>1. Enter the code to join another group:</div>
+              <input type="text" value={joinShareId} onChange={this.handleJoinShareIdChange} />
+            </div>
+            <div className="input-stack">
+              <div>2. Provide a name or label for your data.</div>
               <input type="text" value={personalDataLabel} placeholder={lastPersonalDataLabel}
                 onChange={this.handleDataLabelChange} />
             </div>
-          </li>
-          <li>
-            Invite others to join your table <strong>or</strong> join another group
-            <div>
-              <div>
-                <button onClick={this.initiateShare} disabled={!readyToInitiateShare}>
-                  Allow others to join your table
-                </button>
-              </div>
-              <div>
-                or
-              </div>
-              <div>
-                Enter code to join another group:
-                <input type="text" value={joinShareId} onChange={this.handleJoinShareIdChange} />
-                <button disabled={!readyToJoinShare} onClick={this.joinShare}>Join</button>
-              </div>
+            <div className="button-row">
+              <button
+                className="cancel-button"
+                onClick={() => this.setState({ joinOtherTable: false })}>
+                  cancel
+              </button>
+              <button onClick={this.joinShare}>Begin Collaboration</button>
             </div>
-          </li>
-        </ol>
+          </div>
+        }
+        { showFirstAllowOthersToJoinOptions &&
+          <div className="form-container button-stack">
+            <button className="merge-button" onClick={() => this.setState({ mergeTable: true })}>
+              Merge one of your tables with the table being joined.
+            </button>
+            <div>
+              ----- or -----
+            </div>
+            <button onClick={() => this.setState({ createNewTable: true })}>
+              Create new table.
+            </button>
+            <div className="button-row">
+              <button
+                className="cancel-button"
+                onClick={() => this.setState({ allowOthersToJoin: false })}>
+                  cancel
+              </button>
+            </div>
+          </div>
+        }
+        { mergeTable &&
+          <div className="form-container">
+            <div className="select-stack">
+              <div>1. Select a table to merge with the shared group:</div>
+              <select value={selectedContextOption} onChange={this.handleDataContextChange}>
+                { availableContextOptions }
+              </select>
+            </div>
+            <div className="input-row">
+              <div>2. Enter the code of the group to join:</div>
+              <input type="text" value={joinShareId} onChange={this.handleJoinShareIdChange} />
+            </div>
+            <div className="input-stack">
+              <div>3. Provide a name or label for your data.</div>
+              <input type="text" value={personalDataLabel} placeholder={lastPersonalDataLabel}
+                onChange={this.handleDataLabelChange} />
+            </div>
+            <div className="button-row">
+              <button
+                className="cancel-button"
+                onClick={() => this.setState({ mergeTable: false })}>
+                  cancel
+              </button>
+              <button onClick={this.initiateShare}>Begin Collaboration</button>
+            </div>
+          </div>
+        }
+        { createNewTable &&
+          <div className="form-container">
+            <div className="select-stack">
+              <div>1. Select a table for others to join:</div>
+              <select value={selectedContextOption} onChange={this.handleDataContextChange}>
+                { availableContextOptions }
+              </select>
+            </div>
+            <div className="input-stack">
+              <div>2. Provide a name or label for your data:</div>
+              <input type="text" value={personalDataLabel} placeholder={lastPersonalDataLabel}
+                onChange={this.handleDataLabelChange} />
+            </div>
+            <div className="button-row">
+              <button
+                className="cancel-button"
+                onClick={() => this.setState({ createNewTable: false })}>
+                  cancel
+              </button>
+              <button onClick={this.initiateShare}>Begin Collaboration</button>
+            </div>
+          </div>
+        }
         {this.renderErrorMessage()}
       </div>
     );
@@ -159,19 +237,19 @@ export default class App extends Component {
     const tableName = dataContext ? dataContext.title : selectedDataContext;
     return (
       <div className="App sharing">
-        <div>
-          Table collaboration enabled for
+        <div className="text-stack">
+          Table collaboration enabled for:
+          <div className="callout">
+            {tableName}
+          </div>
         </div>
-        <div className="callout">
-          {tableName}
+        <div className="text-stack">
+          Others can join this table by using the code:
+          <div className="callout shareId">
+            {shareId}
+          </div>
         </div>
-        <div>
-          Others can join this table by using the code
-        </div>
-        <div className="callout shareId">
-          {shareId}
-        </div>
-        <div>
+        <div className="leave-collaboration">
           <button onClick={this.leaveShare}>Leave collaboration or join a different table</button>
         </div>
       </div>
@@ -263,7 +341,7 @@ export default class App extends Component {
       await Codap.removeItems(selectedDataContext, [items[0]]);
       items.shift();
     }
-    
+
     // write non-empty user items to firebase
     database.writeUserItems(personalDataKey, items.filter(item => !Codap.isEmptyUserItem(item)));
     return items;
