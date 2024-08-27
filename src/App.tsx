@@ -12,8 +12,8 @@ import { DataContext, CodapItem, CodapRequest } from "./lib/types";
 const kPluginName = "Collaborative Data Sharing";
 const kVersion = pkg.version;
 const kInitialDimensions = {
-  width: 450,
-  height: 325
+  width: 420,
+  height: 350
 };
 
 const kSharedDimensions = {
@@ -40,6 +40,7 @@ interface IState extends ISaveState {
   joinOtherTable?: boolean;
   mergeTable?: boolean;
   createNewTable?: boolean;
+  newTableName?: string;
 }
 
 let database: DB;
@@ -98,7 +99,7 @@ export default class App extends Component {
   renderForm() {
     const { availableDataContexts, selectedDataContext, lastSelectedDataContext,
             personalDataLabel, lastPersonalDataLabel, joinShareId,
-          allowOthersToJoin, joinOtherTable, mergeTable, createNewTable } = this.state;
+          allowOthersToJoin, joinOtherTable, mergeTable, createNewTable, newTableName } = this.state;
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
@@ -111,16 +112,18 @@ export default class App extends Component {
       <div className="App">
         {showFirstStep &&
           <div className="form-container button-stack">
-            <div>
-              <button onClick={() => this.setState({ allowOthersToJoin: true })}>
+            <div className="option-1">
+              <button className="option-1" onClick={() => this.setState({ allowOthersToJoin: true })}>
                 Allow others to join your table
               </button>
             </div>
-            <div>
-              ----- or -----
+            <div className="separator">
+              <div className="separator-line"/>
+              <div>or</div>
+              <div className="separator-line"/>
             </div>
-            <div>
-              <button onClick={() => this.setState({ joinOtherTable: true })}>
+            <div className="option-2">
+              <button className="option-2" onClick={() => this.setState({ joinOtherTable: true })}>
                 {"Join someone else's table"}
               </button>
             </div>
@@ -128,12 +131,12 @@ export default class App extends Component {
         }
         { joinOtherTable &&
           <div className="form-container">
-            <div className="input-row">
+            <div className="input-stack">
               <div>1. Enter the code to join another group:</div>
               <input type="text" value={joinShareId} onChange={this.handleJoinShareIdChange} />
             </div>
             <div className="input-stack">
-              <div>2. Provide a name or label for your data.</div>
+              <div>2. Provide a name or label for your data:</div>
               <input type="text" value={personalDataLabel} placeholder={lastPersonalDataLabel}
                 onChange={this.handleDataLabelChange} />
             </div>
@@ -149,15 +152,21 @@ export default class App extends Component {
         }
         { showFirstAllowOthersToJoinOptions &&
           <div className="form-container button-stack">
-            <button className="merge-button" onClick={() => this.setState({ mergeTable: true })}>
-              Merge one of your tables with the table being joined.
-            </button>
-            <div>
-              ----- or -----
+            <div className="option-1">
+              <button onClick={() => this.setState({ mergeTable: true })}>
+                Merge one of your tables with the table being joined
+              </button>
             </div>
-            <button onClick={() => this.setState({ createNewTable: true })}>
-              Create new table.
-            </button>
+            <div className="separator">
+              <div className="separator-line"/>
+              <div>or</div>
+              <div className="separator-line"/>
+            </div>
+            <div className="option-2">
+              <button onClick={() => this.setState({ createNewTable: true })}>
+                Create new table
+              </button>
+            </div>
             <div className="button-row">
               <button
                 className="cancel-button"
@@ -175,12 +184,12 @@ export default class App extends Component {
                 { availableContextOptions }
               </select>
             </div>
-            <div className="input-row">
+            <div className="input-stack">
               <div>2. Enter the code of the group to join:</div>
               <input type="text" value={joinShareId} onChange={this.handleJoinShareIdChange} />
             </div>
             <div className="input-stack">
-              <div>3. Provide a name or label for your data.</div>
+              <div>3. Provide a name or label for your data:</div>
               <input type="text" value={personalDataLabel} placeholder={lastPersonalDataLabel}
                 onChange={this.handleDataLabelChange} />
             </div>
@@ -196,11 +205,12 @@ export default class App extends Component {
         }
         { createNewTable &&
           <div className="form-container">
-            <div className="select-stack">
-              <div>1. Select a table for others to join:</div>
-              <select value={selectedContextOption} onChange={this.handleDataContextChange}>
-                { availableContextOptions }
-              </select>
+            <div className="input-stack">
+              <div>1. Enter a name for the table:</div>
+              <input
+                type="text" value={newTableName}
+                onChange={(e) => this.setState({ newTableName: e.target.value })}
+              />
             </div>
             <div className="input-stack">
               <div>2. Provide a name or label for your data:</div>
@@ -383,15 +393,15 @@ export default class App extends Component {
 
   initiateShare = async () => {
     await this.updatePersonalDataLabelAndKey();
-    const {selectedDataContext, personalDataKey, personalDataLabel } = this.state;
+    const {selectedDataContext, personalDataKey, personalDataLabel, createNewTable, newTableName } = this.state;
 
     let dataContextName: string;
 
     this.setState({ isInProcessOfSharing: true });
     try {
-      if (!selectedDataContext || (selectedDataContext === kNewSharedTable)) {
+      if (createNewTable) {
         // create new data context for sharing
-        const newContext = await Codap.createDataContext({title: kNewDataContextTitle});
+        const newContext = await Codap.createDataContext({title: newTableName? newTableName : kNewDataContextTitle});
         if (newContext) {
           dataContextName = newContext.name;
           this.updateSelectedDataContext(dataContextName);
@@ -501,7 +511,12 @@ export default class App extends Component {
     this.setState({
       shareId: null,
       personalDataLabel: "",
-      joinShareId: ""
+      joinShareId: "",
+      allowOthersToJoin: undefined,
+      joinOtherTable: undefined,
+      mergeTable: undefined,
+      createNewTable: undefined
+
     });
     database.leaveSharedTable();
   };
