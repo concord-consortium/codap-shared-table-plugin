@@ -34,7 +34,7 @@ export const CreateNewTablePage = (props: CreateNewTablePageProps) => {
           onClick={() => updateState({ createNewTable: false })}>
           {CANCEL}
         </button>
-        <button onClick={initiateShare}>{BEGIN_COLLABORATION}</button>
+        <button disabled={!personalDataLabel || !newTableName} onClick={initiateShare}>{BEGIN_COLLABORATION}</button>
       </div>
     </div>
   )

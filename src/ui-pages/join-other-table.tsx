@@ -32,7 +32,7 @@ export const JoinOtherTablePage = (props: JoinOtherTableProps) => {
           onClick={() => updateState({ joinOtherTable: false })}>
             {CANCEL}
         </button>
-        <button onClick={joinShare}>{BEGIN_COLLABORATION}</button>
+        <button disabled={!joinShareId || !personalDataLabel} onClick={joinShare}>{BEGIN_COLLABORATION}</button>
       </div>
     </div>
   )

@@ -6,6 +6,8 @@
   --teal-light-2: #b7e2ec;
   --teal-light-3: #cdebf2;
   --charcoal: #080808;
+  --charcoal-light: #333333;
+  --charcoal-light-5: #f2f2f2;
 }
 
 .App {
@@ -150,6 +152,13 @@ button:hover {
 
 button:active {
   background-color: var(--teal-light-1);
+}
+
+button:disabled {
+  opacity: 0.7;
+  background-color: var(--charcoal-light-5);
+  color: var(--charcoal-light);
+  cursor: not-allowed;
 }
 
 .cancel-button {

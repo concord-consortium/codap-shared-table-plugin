@@ -43,7 +43,10 @@ export const MergeTablePage = (props: MergeTablePageProps) => {
           onClick={() => updateState({ mergeTable: false })}>
           {CANCEL}
         </button>
-        <button onClick={initiateShare}>{BEGIN_COLLABORATION}</button>
+        <button
+          disabled={!selectedContextOption || !personalDataLabel || !joinShareId}
+          onClick={initiateShare}>{BEGIN_COLLABORATION}
+        </button>
       </div>
     </div>
   )
