@@ -10,7 +10,7 @@ export const FirstPage = ({updateState}: FirstPageProps) => {
   return (
     <div className="form-container button-stack">
       <div className="option-1">
-        <button className="option-1" onClick={() => updateState({ allowOthersToJoin: true })}>
+        <button className="option-1" onClick={() => updateState({ shareTable: true })}>
           {BEGIN_SHARING_TABLE}
         </button>
       </div>
@@ -20,7 +20,7 @@ export const FirstPage = ({updateState}: FirstPageProps) => {
         <div className="separator-line"/>
       </div>
       <div className="option-2">
-        <button className="option-2" onClick={() => updateState({ joinOtherTable: true })}>
+        <button className="option-2" onClick={() => updateState({ joinTable: true })}>
           {JOIN_SOMEONE_ELSES_TABLE}
         </button>
       </div>

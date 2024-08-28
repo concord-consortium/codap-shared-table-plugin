@@ -11,8 +11,8 @@ export interface IState extends ISaveState {
   joinShareId: string;
   isInProcessOfSharing: boolean;
   showJoinShareError: boolean;
-  allowOthersToJoin?: boolean;
-  joinOtherTable?: boolean;
+  shareTable?: boolean;
+  joinTable?: boolean;
   shareExistingTable?: boolean;
   createNewTable?: boolean;
   joinAndMergeTable?: boolean;

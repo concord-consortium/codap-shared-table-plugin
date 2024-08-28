@@ -3,7 +3,7 @@ import { BEGIN_COLLABORATION, BACK, PROVIDE_NAME_OR_LABEL,
   ENTER_CODE_OF_GROUP, SELECT_TABLE_TO_MERGE} from "../constants";
 import { IState } from "../types";
 
-interface MergeTablePageProps {
+interface JoinAndMergeTableProps {
   selectedContextOption: string;
   availableContextOptions: JSX.Element[];
   joinShareId: string;
@@ -16,7 +16,7 @@ interface MergeTablePageProps {
   updateState: (state: Partial<IState>) => void;
 }
 
-export const JoinAndMergeTableForm = (props: MergeTablePageProps) => {
+export const JoinAndMergeTable = (props: JoinAndMergeTableProps) => {
   const { selectedContextOption, availableContextOptions, personalDataLabel,
     lastPersonalDataLabel, handleDataContextChange, handleDataLabelChange,
     joinShare, joinShareId, updateState, handleJoinShareIdChange } = props;

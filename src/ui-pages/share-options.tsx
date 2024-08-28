@@ -1,17 +1,17 @@
 import React from "react";
-import { BACK, JOIN_AND_MERGE, OR, JOIN_WITHOUT_MERGING } from "../constants";
+import { BACK, CREATE_NEW_TABLE, SHARE_EXISTING_TABLE, OR } from "../constants";
 import { IState } from "../types";
 
-interface AllowOthersToJoinPageProps {
+interface ShareOptionsProps {
   updateState: (state: Partial<IState>) => void;
 }
 
-export const JoinOtherTableOptionsPage = ({updateState}: AllowOthersToJoinPageProps) => {
+export const ShareOptions = ({updateState}: ShareOptionsProps) => {
   return (
     <div className="form-container button-stack">
       <div className="option-1">
-        <button onClick={() => updateState({ joinAndMergeTable: true })}>
-          {JOIN_AND_MERGE}
+        <button onClick={() => updateState({ shareExistingTable: true })}>
+          {SHARE_EXISTING_TABLE}
         </button>
       </div>
       <div className="separator">
@@ -20,14 +20,14 @@ export const JoinOtherTableOptionsPage = ({updateState}: AllowOthersToJoinPagePr
         <div className="separator-line" />
       </div>
       <div className="option-2">
-        <button onClick={() => updateState({ joinWithoutMerging: true })}>
-          {JOIN_WITHOUT_MERGING}
+        <button onClick={() => updateState({ createNewTable: true })}>
+          {CREATE_NEW_TABLE}
         </button>
       </div>
       <div className="button-row">
         <button
           className="cancel-button"
-          onClick={() => updateState({ joinOtherTable: false, joinAndMergeTable: false, joinWithoutMerging: false })}>
+          onClick={() => updateState({ shareTable: false, shareExistingTable: false, createNewTable: false })}>
           {BACK}
         </button>
       </div>

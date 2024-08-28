@@ -2,7 +2,7 @@ import React from "react";
 import { BEGIN_COLLABORATION, BACK, PROVIDE_NAME_OR_LABEL, SELECT_TABLE_TO_SHARE } from "../constants";
 import { IState } from "../types";
 
-interface MergeTablePageProps {
+interface ShareExistingTableProps {
   selectedContextOption: string;
   availableContextOptions: JSX.Element[];
   personalDataLabel: string;
@@ -13,7 +13,7 @@ interface MergeTablePageProps {
   updateState: (state: Partial<IState>) => void;
 }
 
-export const ShareExistingTablePage = (props: MergeTablePageProps) => {
+export const ShareExistingTable = (props: ShareExistingTableProps) => {
   const { selectedContextOption, availableContextOptions, personalDataLabel,
     lastPersonalDataLabel, handleDataContextChange, handleDataLabelChange,
     initiateShare, updateState } = props;

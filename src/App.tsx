@@ -11,11 +11,11 @@ import { kInitialDimensions, kPluginName, kSharedDimensions, kVersion, kNewDataC
   kNewSharedTable, kShareIdLength } from "./constants";
 import { IState } from "./types";
 import { FirstPage } from "./ui-pages/first-page";
-import { JoinAndMergeTableForm } from "./ui-pages/join-and-merge-table";
-import { AllowOthersToJoinPage } from "./ui-pages/allow-others-to-join-page";
-import { ShareExistingTablePage } from "./ui-pages/share-existing-table";
-import { CreateNewTablePage } from "./ui-pages/create-new-table-page"
-import { JoinOtherTableOptionsPage } from "./ui-pages/join-other-table-options-page";
+import { JoinAndMergeTable } from "./ui-pages/join-and-merge-table";
+import { ShareOptions } from "./ui-pages/share-options";
+import { ShareExistingTable } from "./ui-pages/share-existing-table";
+import { ShareNewTable } from "./ui-pages/share-new-table"
+import { JoinOptions } from "./ui-pages/join-options";
 import { JoinWithoutMerging } from "./ui-pages/join-without-merging";
 
 let database: DB;
@@ -83,13 +83,12 @@ export default class App extends Component {
   }
 
   renderFormPage() {
-    const { availableDataContexts, selectedDataContext, lastSelectedDataContext, allowOthersToJoin,
-      joinOtherTable, shareExistingTable, joinAndMergeTable, createNewTable,
-      joinWithoutMerging } = this.state;
-    const showFirstStep = !allowOthersToJoin && !joinOtherTable;
+    const { availableDataContexts, selectedDataContext, lastSelectedDataContext, shareTable, joinTable,
+      shareExistingTable, joinAndMergeTable, createNewTable, joinWithoutMerging } = this.state;
+    const showFirstStep = !shareTable && !joinTable;
     const noSelectedSubOptions = !shareExistingTable && !createNewTable && !joinAndMergeTable && !joinWithoutMerging;
-    const showFirstAllowOthersToJoinOptions = allowOthersToJoin && !joinOtherTable && noSelectedSubOptions;
-    const showFirstJoinOtherTableOptions = !allowOthersToJoin && joinOtherTable && noSelectedSubOptions;
+    const showShareTableOptions = shareTable && !joinTable && noSelectedSubOptions;
+    const showJoinTableOptions = !shareTable && joinTable && noSelectedSubOptions;
 
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
@@ -100,21 +99,21 @@ export default class App extends Component {
       return (
         <FirstPage updateState={this.setState} />
       )
-    } else if (showFirstJoinOtherTableOptions) {
+    } else if (showJoinTableOptions) {
       return (
-        <JoinOtherTableOptionsPage
+        <JoinOptions
           updateState={this.setState}
         />
       )
-    } else if (showFirstAllowOthersToJoinOptions) {
+    } else if (showShareTableOptions) {
       return (
-        <AllowOthersToJoinPage
+        <ShareOptions
           updateState={this.setState}
         />
       )
     } else if (joinAndMergeTable) {
         return (
-          <JoinAndMergeTableForm
+          <JoinAndMergeTable
             joinShareId={this.state.joinShareId}
             personalDataLabel={this.state.personalDataLabel}
             lastPersonalDataLabel={this.state.lastPersonalDataLabel}
@@ -141,7 +140,7 @@ export default class App extends Component {
         )
       } else if (shareExistingTable) {
         return (
-          <ShareExistingTablePage
+          <ShareExistingTable
             selectedContextOption={selectedContextOption}
             availableContextOptions={availableContextOptions}
             personalDataLabel={this.state.personalDataLabel}
@@ -154,7 +153,7 @@ export default class App extends Component {
         )
     } else if (createNewTable) {
       return (
-        <CreateNewTablePage
+        <ShareNewTable
           newTableName={this.state.newTableName || ""}
           updateState={this.setState}
           personalDataLabel={this.state.personalDataLabel}
