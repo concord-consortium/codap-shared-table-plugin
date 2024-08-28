@@ -1,5 +1,5 @@
 import React from "react";
-import { BEGIN_COLLABORATION, CANCEL, ENTER_NAME_FOR_TABLE, PROVIDE_NAME_OR_LABEL } from "../constants";
+import { BEGIN_COLLABORATION, BACK, ENTER_NAME_FOR_TABLE, PROVIDE_NAME_OR_LABEL } from "../constants";
 import { IState } from "../types";
 
 interface CreateNewTablePageProps {
@@ -32,7 +32,7 @@ export const CreateNewTablePage = (props: CreateNewTablePageProps) => {
         <button
           className="cancel-button"
           onClick={() => updateState({ createNewTable: false })}>
-          {CANCEL}
+          {BACK}
         </button>
         <button disabled={!personalDataLabel || !newTableName} onClick={initiateShare}>{BEGIN_COLLABORATION}</button>
       </div>

@@ -1,8 +1,8 @@
 import React from "react";
 import { IState } from "../types";
-import { CANCEL, PROVIDE_NAME_OR_LABEL, BEGIN_COLLABORATION, ENTER_CODE_TO_JOIN_GROUP } from "../constants";
+import { BACK, PROVIDE_NAME_OR_LABEL, BEGIN_COLLABORATION, ENTER_CODE_OF_GROUP } from "../constants";
 
-interface JoinOtherTableProps {
+interface JoinWithoutMergingProps {
   joinShareId: string;
   personalDataLabel: string;
   lastPersonalDataLabel: string;
@@ -12,25 +12,25 @@ interface JoinOtherTableProps {
   updateState: (state: Partial<IState>) => void;
 }
 
-export const JoinOtherTablePage = (props: JoinOtherTableProps) => {
+export const JoinWithoutMerging = (props: JoinWithoutMergingProps) => {
   const { joinShareId, personalDataLabel, lastPersonalDataLabel, handleJoinShareIdChange,
     handleDataLabelChange, joinShare, updateState } = props;
   return (
     <div className="form-container">
       <div className="input-stack">
-        <div>{ENTER_CODE_TO_JOIN_GROUP}</div>
-        <input type="text" value={joinShareId} onChange={handleJoinShareIdChange} />
-      </div>
-      <div className="input-stack">
         <div>{PROVIDE_NAME_OR_LABEL}</div>
         <input type="text" value={personalDataLabel} placeholder={lastPersonalDataLabel}
           onChange={handleDataLabelChange} />
       </div>
+      <div className="input-stack">
+        <div>{ENTER_CODE_OF_GROUP}</div>
+        <input type="text" value={joinShareId} onChange={handleJoinShareIdChange} />
+      </div>
       <div className="button-row">
         <button
           className="cancel-button"
-          onClick={() => updateState({ joinOtherTable: false })}>
-            {CANCEL}
+          onClick={() => updateState({ joinWithoutMerging: false })}>
+            {BACK}
         </button>
         <button disabled={!joinShareId || !personalDataLabel} onClick={joinShare}>{BEGIN_COLLABORATION}</button>
       </div>

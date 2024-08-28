@@ -12,6 +12,7 @@
 
 .App {
   color: var(--charcoal);
+  font-weight: 500;
 }
 
 .App div {
@@ -144,6 +145,7 @@ button {
   padding: 5px 10px;
   font-family: 'Montserrat', sans-serif;
   font-size: 12px;
+  font-weight: 500;
 }
 
 button:hover {

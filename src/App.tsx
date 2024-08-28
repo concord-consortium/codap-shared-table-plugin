@@ -11,10 +11,12 @@ import { kInitialDimensions, kPluginName, kSharedDimensions, kVersion, kNewDataC
   kNewSharedTable, kShareIdLength } from "./constants";
 import { IState } from "./types";
 import { FirstPage } from "./ui-pages/first-page";
-import { JoinOtherTablePage } from "./ui-pages/join-other-table";
+import { JoinAndMergeTableForm } from "./ui-pages/join-and-merge-table";
 import { AllowOthersToJoinPage } from "./ui-pages/allow-others-to-join-page";
-import { MergeTablePage } from "./ui-pages/merge-table-page";
+import { ShareExistingTablePage } from "./ui-pages/share-existing-table";
 import { CreateNewTablePage } from "./ui-pages/create-new-table-page"
+import { JoinOtherTableOptionsPage } from "./ui-pages/join-other-table-options-page";
+import { JoinWithoutMerging } from "./ui-pages/join-without-merging";
 
 let database: DB;
 
@@ -82,23 +84,25 @@ export default class App extends Component {
 
   renderFormPage() {
     const { availableDataContexts, selectedDataContext, lastSelectedDataContext, allowOthersToJoin,
-      joinOtherTable, mergeTable, createNewTable } = this.state;
-    const showFirstStep = !allowOthersToJoin && !joinOtherTable && !mergeTable && !createNewTable;
-    const showFirstAllowOthersToJoinOptions = allowOthersToJoin && !joinOtherTable && !mergeTable && !createNewTable;
+      joinOtherTable, shareExistingTable, joinAndMergeTable, createNewTable,
+      joinWithoutMerging } = this.state;
+    const showFirstStep = !allowOthersToJoin && !joinOtherTable;
+    const noSelectedSubOptions = !shareExistingTable && !createNewTable && !joinAndMergeTable && !joinWithoutMerging;
+    const showFirstAllowOthersToJoinOptions = allowOthersToJoin && !joinOtherTable && noSelectedSubOptions;
+    const showFirstJoinOtherTableOptions = !allowOthersToJoin && joinOtherTable && noSelectedSubOptions;
+
+    const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
+      <option key={dc.name} value={dc.name}>{dc.title}</option>
+    );
+    const selectedContextOption = selectedDataContext || lastSelectedDataContext || kNewSharedTable;
 
     if (showFirstStep) {
       return (
         <FirstPage updateState={this.setState} />
       )
-    } else if (joinOtherTable) {
+    } else if (showFirstJoinOtherTableOptions) {
       return (
-        <JoinOtherTablePage
-          joinShareId={this.state.joinShareId}
-          personalDataLabel={this.state.personalDataLabel}
-          lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-          handleJoinShareIdChange={this.handleJoinShareIdChange}
-          handleDataLabelChange={this.handleDataLabelChange}
-          joinShare={this.joinShare}
+        <JoinOtherTableOptionsPage
           updateState={this.setState}
         />
       )
@@ -108,25 +112,46 @@ export default class App extends Component {
           updateState={this.setState}
         />
       )
-    } else if (mergeTable) {
-      const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
-        <option key={dc.name} value={dc.name}>{dc.title}</option>
-      );
-      const selectedContextOption = selectedDataContext || lastSelectedDataContext || kNewSharedTable;
-      return (
-        <MergeTablePage
-          selectedContextOption={selectedContextOption}
-          availableContextOptions={availableContextOptions}
-          joinShareId={this.state.joinShareId}
-          personalDataLabel={this.state.personalDataLabel}
-          lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-          handleDataContextChange={this.handleDataContextChange}
-          handleJoinShareIdChange={this.handleJoinShareIdChange}
-          handleDataLabelChange={this.handleDataLabelChange}
-          initiateShare={this.initiateShare}
-          updateState={this.setState}
-        />
-      )
+    } else if (joinAndMergeTable) {
+        return (
+          <JoinAndMergeTableForm
+            joinShareId={this.state.joinShareId}
+            personalDataLabel={this.state.personalDataLabel}
+            lastPersonalDataLabel={this.state.lastPersonalDataLabel}
+            handleJoinShareIdChange={this.handleJoinShareIdChange}
+            handleDataLabelChange={this.handleDataLabelChange}
+            handleDataContextChange={this.handleDataContextChange}
+            joinShare={this.joinShare}
+            updateState={this.setState}
+            selectedContextOption={selectedContextOption}
+            availableContextOptions={availableContextOptions}
+           />
+       )
+      } else if (joinWithoutMerging) {
+        return (
+          <JoinWithoutMerging
+            joinShareId={this.state.joinShareId}
+            personalDataLabel={this.state.personalDataLabel}
+            lastPersonalDataLabel={this.state.lastPersonalDataLabel}
+            handleJoinShareIdChange={this.handleJoinShareIdChange}
+            handleDataLabelChange={this.handleDataLabelChange}
+            joinShare={this.joinShare}
+            updateState={this.setState}
+          />
+        )
+      } else if (shareExistingTable) {
+        return (
+          <ShareExistingTablePage
+            selectedContextOption={selectedContextOption}
+            availableContextOptions={availableContextOptions}
+            personalDataLabel={this.state.personalDataLabel}
+            lastPersonalDataLabel={this.state.lastPersonalDataLabel}
+            handleDataContextChange={this.handleDataContextChange}
+            handleDataLabelChange={this.handleDataLabelChange}
+            initiateShare={this.initiateShare}
+            updateState={this.setState}
+          />
+        )
     } else if (createNewTable) {
       return (
         <CreateNewTablePage
