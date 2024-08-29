@@ -8,7 +8,7 @@ context("Test the overall app", () => {
 
   describe("Desktop functionalities", () => {
     it("renders with text", () => {
-      ae.getApp().invoke("text").should("include", "Allow others to join your table");
+      ae.getApp().invoke("text").should("include", "Begin sharing a table");
     });
   });
 });

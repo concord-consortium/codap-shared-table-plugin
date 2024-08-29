@@ -22,16 +22,6 @@ let database: DB;
 
 export default class App extends Component {
 
-  constructor() {
-    super({});
-    this.setState = this.setState.bind(this);
-    this.handleJoinShareIdChange = this.handleJoinShareIdChange.bind(this);
-    this.handleDataLabelChange = this.handleDataLabelChange.bind(this);
-    this.joinShare = this.joinShare.bind(this);
-    this.handleDataContextChange = this.handleDataContextChange.bind(this);
-    this.initiateShare = this.initiateShare.bind(this);
-  }
-
   public state: IState = {
     id: "",
     availableDataContexts: [],
@@ -90,6 +80,13 @@ export default class App extends Component {
     const showShareTableOptions = shareTable && !joinTable && noSelectedSubOptions;
     const showJoinTableOptions = !shareTable && joinTable && noSelectedSubOptions;
 
+    const setState = (state: Partial<IState>) => this.setState(state);
+    const handleJoinShareIdChange = (event: ChangeEvent<HTMLInputElement>) => this.handleJoinShareIdChange(event);
+    const handleDataLabelChange = (event: ChangeEvent<HTMLInputElement>) => this.handleDataLabelChange(event);
+    const joinShare = () => this.joinShare();
+    const handleDataContextChange = (event: ChangeEvent<HTMLSelectElement>) => this.handleDataContextChange(event);
+    const initiateShare = () => this.initiateShare();
+
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
@@ -97,18 +94,18 @@ export default class App extends Component {
 
     if (showFirstStep) {
       return (
-        <FirstPage updateState={this.setState} />
+        <FirstPage updateState={setState} />
       )
     } else if (showJoinTableOptions) {
       return (
         <JoinOptions
-          updateState={this.setState}
+          updateState={setState}
         />
       )
     } else if (showShareTableOptions) {
       return (
         <ShareOptions
-          updateState={this.setState}
+          updateState={setState}
         />
       )
     } else if (joinAndMergeTable) {
@@ -117,11 +114,11 @@ export default class App extends Component {
             joinShareId={this.state.joinShareId}
             personalDataLabel={this.state.personalDataLabel}
             lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-            handleJoinShareIdChange={this.handleJoinShareIdChange}
-            handleDataLabelChange={this.handleDataLabelChange}
-            handleDataContextChange={this.handleDataContextChange}
-            joinShare={this.joinShare}
-            updateState={this.setState}
+            handleJoinShareIdChange={handleJoinShareIdChange}
+            handleDataLabelChange={handleDataLabelChange}
+            handleDataContextChange={handleDataContextChange}
+            joinShare={joinShare}
+            updateState={setState}
             selectedContextOption={selectedContextOption}
             availableContextOptions={availableContextOptions}
            />
@@ -132,10 +129,10 @@ export default class App extends Component {
             joinShareId={this.state.joinShareId}
             personalDataLabel={this.state.personalDataLabel}
             lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-            handleJoinShareIdChange={this.handleJoinShareIdChange}
-            handleDataLabelChange={this.handleDataLabelChange}
-            joinShare={this.joinShare}
-            updateState={this.setState}
+            handleJoinShareIdChange={handleJoinShareIdChange}
+            handleDataLabelChange={handleDataLabelChange}
+            joinShare={joinShare}
+            updateState={setState}
           />
         )
       } else if (shareExistingTable) {
@@ -145,21 +142,21 @@ export default class App extends Component {
             availableContextOptions={availableContextOptions}
             personalDataLabel={this.state.personalDataLabel}
             lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-            handleDataContextChange={this.handleDataContextChange}
-            handleDataLabelChange={this.handleDataLabelChange}
-            initiateShare={this.initiateShare}
-            updateState={this.setState}
+            handleDataContextChange={handleDataContextChange}
+            handleDataLabelChange={handleDataLabelChange}
+            initiateShare={initiateShare}
+            updateState={setState}
           />
         )
     } else if (createNewTable) {
       return (
         <ShareNewTable
           newTableName={this.state.newTableName || ""}
-          updateState={this.setState}
+          updateState={setState}
           personalDataLabel={this.state.personalDataLabel}
           lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-          handleDataLabelChange={this.handleDataLabelChange}
-          initiateShare={this.initiateShare}
+          handleDataLabelChange={handleDataLabelChange}
+          initiateShare={initiateShare}
         />
       )
     }
