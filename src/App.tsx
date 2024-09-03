@@ -451,11 +451,13 @@ export default class App extends Component {
       shareId: null,
       personalDataLabel: "",
       joinShareId: "",
-      allowOthersToJoin: undefined,
-      joinOtherTable: undefined,
-      mergeTable: undefined,
-      createNewTable: undefined
-
+      shareTable: undefined,
+      joinTable: undefined,
+      shareExistingTable: undefined,
+      createNewTable: undefined,
+      joinAndMergeTable: undefined,
+      joinWithoutMerging: undefined,
+      newTableName: undefined
     });
     database.leaveSharedTable();
   };
