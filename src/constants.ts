@@ -40,3 +40,6 @@ export const ENTER_CODE_OF_GROUP = "Enter the code of the group to join:";
 export const PROVIDE_NAME_OR_LABEL = "Provide a name or label for your data:";
 
 export const BEGIN_COLLABORATION = "Begin Collaboration";
+
+export const NO_TABLES_TO_MERGE = "You don't have any tables to merge. Create a new one or import a table to continue.";
+export const NO_TABLES_TO_SHARE = "You don't have any tables to share. Create a new one or import a table to continue.";

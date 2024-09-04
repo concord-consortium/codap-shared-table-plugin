@@ -1,5 +1,6 @@
 import React from "react";
-import { BEGIN_COLLABORATION, BACK, PROVIDE_NAME_OR_LABEL, SELECT_TABLE_TO_SHARE } from "../constants";
+import { BEGIN_COLLABORATION, BACK, PROVIDE_NAME_OR_LABEL, SELECT_TABLE_TO_SHARE,
+  NO_TABLES_TO_SHARE } from "../constants";
 import { IState } from "../types";
 
 interface ShareExistingTableProps {
@@ -21,9 +22,14 @@ export const ShareExistingTable = (props: ShareExistingTableProps) => {
     <div className="form-container">
       <div className="select-stack">
         <div>{SELECT_TABLE_TO_SHARE}</div>
-        <select value={selectedContextOption} onChange={handleDataContextChange}>
-          {availableContextOptions}
-        </select>
+          {availableContextOptions.length > 0
+            ? <select value={selectedContextOption} onChange={handleDataContextChange}>
+                {availableContextOptions}
+              </select>
+            : <div className="warning">
+                {NO_TABLES_TO_SHARE}
+              </div>
+          }
       </div>
       <div className="input-stack">
         <div>{PROVIDE_NAME_OR_LABEL}</div>

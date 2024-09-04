@@ -47,6 +47,11 @@
   color: red;
 }
 
+.App .warning {
+  color: red;
+  font-style: italic;
+}
+
 input {
   height: 16px;
   border: 1px solid var(--teal);
