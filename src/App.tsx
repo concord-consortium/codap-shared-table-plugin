@@ -345,7 +345,7 @@ export default class App extends Component {
     try {
       if (createNewTable) {
         // create new data context for sharing
-        const newContext = await Codap.createDataContext({title: newTableName? newTableName : kNewDataContextTitle});
+        const newContext = await Codap.createDataContext({title: newTableName ?? kNewDataContextTitle});
         if (newContext) {
           dataContextName = newContext.name;
           this.updateSelectedDataContext(dataContextName);
