@@ -44,7 +44,7 @@ export const JoinAndMergeTable = (props: JoinAndMergeTableProps) => {
           {BACK}
         </button>
         <button
-          disabled={!selectedContextOption || !personalDataLabel}
+          disabled={!selectedContextOption || !joinShareId || (!personalDataLabel && !lastPersonalDataLabel)}
           onClick={joinShare}>{BEGIN_COLLABORATION}
         </button>
       </div>

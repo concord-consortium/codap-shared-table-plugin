@@ -8,7 +8,7 @@ interface ShareNewTableProps {
   personalDataLabel: string;
   lastPersonalDataLabel: string;
   handleDataLabelChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  initiateShare: () => void;
+  initiateShare: (selectedContextOption?: string) => void;
 }
 
 export const ShareNewTable = (props: ShareNewTableProps) => {
@@ -34,7 +34,12 @@ export const ShareNewTable = (props: ShareNewTableProps) => {
           onClick={() => updateState({ createNewTable: false })}>
           {BACK}
         </button>
-        <button disabled={!personalDataLabel || !newTableName} onClick={initiateShare}>{BEGIN_COLLABORATION}</button>
+        <button
+          disabled={(!personalDataLabel && !lastPersonalDataLabel) || !newTableName}
+          onClick={() => initiateShare()}
+        >
+          {BEGIN_COLLABORATION}
+        </button>
       </div>
     </div>
   )

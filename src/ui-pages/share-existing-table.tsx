@@ -9,7 +9,7 @@ interface ShareExistingTableProps {
   lastPersonalDataLabel: string;
   handleDataContextChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   handleDataLabelChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  initiateShare: () => void;
+  initiateShare: (selectedContextOption?: string) => void;
   updateState: (state: Partial<IState>) => void;
 }
 
@@ -17,7 +17,7 @@ export const ShareExistingTable = (props: ShareExistingTableProps) => {
   const { selectedContextOption, availableContextOptions, personalDataLabel,
     lastPersonalDataLabel, handleDataContextChange, handleDataLabelChange,
     initiateShare, updateState } = props;
-  return (
+    return (
     <div className="form-container">
       <div className="select-stack">
         <div>{SELECT_TABLE_TO_SHARE}</div>
@@ -37,8 +37,8 @@ export const ShareExistingTable = (props: ShareExistingTableProps) => {
           {BACK}
         </button>
         <button
-          disabled={!selectedContextOption || !personalDataLabel}
-          onClick={initiateShare}>{BEGIN_COLLABORATION}
+          disabled={!selectedContextOption || (!personalDataLabel && !lastPersonalDataLabel)}
+          onClick={() => initiateShare(selectedContextOption)}>{BEGIN_COLLABORATION}
         </button>
       </div>
     </div>

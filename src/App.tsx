@@ -8,7 +8,7 @@ import { DB } from "./lib/db";
 import { DBSharedTable } from "./lib/db-types";
 import { DataContext, CodapItem, CodapRequest } from "./lib/types";
 import { kInitialDimensions, kPluginName, kSharedDimensions, kVersion, kNewDataContextTitle,
-  kNewSharedTable, kShareIdLength } from "./constants";
+  kShareIdLength } from "./constants";
 import { IState } from "./types";
 import { FirstPage } from "./ui-pages/first-page";
 import { JoinAndMergeTable } from "./ui-pages/join-and-merge-table";
@@ -85,12 +85,17 @@ export default class App extends Component {
     const handleDataLabelChange = (event: ChangeEvent<HTMLInputElement>) => this.handleDataLabelChange(event);
     const joinShare = () => this.joinShare();
     const handleDataContextChange = (event: ChangeEvent<HTMLSelectElement>) => this.handleDataContextChange(event);
-    const initiateShare = () => this.initiateShare();
+    const initiateShare = (selectedContext?: string) => {
+      if (selectedContext) {
+        this.setState({ selectedDataContext: selectedContext });
+      }
+      this.initiateShare()
+    };
 
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title}</option>
     );
-    const selectedContextOption = selectedDataContext || lastSelectedDataContext || kNewSharedTable;
+    const selectedContextOption = selectedDataContext || lastSelectedDataContext || availableDataContexts[0]?.name;
 
     if (showFirstStep) {
       return (
@@ -109,45 +114,45 @@ export default class App extends Component {
         />
       )
     } else if (joinAndMergeTable) {
-        return (
-          <JoinAndMergeTable
-            joinShareId={this.state.joinShareId}
-            personalDataLabel={this.state.personalDataLabel}
-            lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-            handleJoinShareIdChange={handleJoinShareIdChange}
-            handleDataLabelChange={handleDataLabelChange}
-            handleDataContextChange={handleDataContextChange}
-            joinShare={joinShare}
-            updateState={setState}
-            selectedContextOption={selectedContextOption}
-            availableContextOptions={availableContextOptions}
-           />
+      return (
+        <JoinAndMergeTable
+          joinShareId={this.state.joinShareId}
+          personalDataLabel={this.state.personalDataLabel}
+          lastPersonalDataLabel={this.state.lastPersonalDataLabel}
+          handleJoinShareIdChange={handleJoinShareIdChange}
+          handleDataLabelChange={handleDataLabelChange}
+          handleDataContextChange={handleDataContextChange}
+          joinShare={joinShare}
+          updateState={setState}
+          selectedContextOption={selectedContextOption}
+          availableContextOptions={availableContextOptions}
+          />
        )
-      } else if (joinWithoutMerging) {
-        return (
-          <JoinWithoutMerging
-            joinShareId={this.state.joinShareId}
-            personalDataLabel={this.state.personalDataLabel}
-            lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-            handleJoinShareIdChange={handleJoinShareIdChange}
-            handleDataLabelChange={handleDataLabelChange}
-            joinShare={joinShare}
-            updateState={setState}
-          />
-        )
-      } else if (shareExistingTable) {
-        return (
-          <ShareExistingTable
-            selectedContextOption={selectedContextOption}
-            availableContextOptions={availableContextOptions}
-            personalDataLabel={this.state.personalDataLabel}
-            lastPersonalDataLabel={this.state.lastPersonalDataLabel}
-            handleDataContextChange={handleDataContextChange}
-            handleDataLabelChange={handleDataLabelChange}
-            initiateShare={initiateShare}
-            updateState={setState}
-          />
-        )
+    } else if (joinWithoutMerging) {
+      return (
+        <JoinWithoutMerging
+          joinShareId={this.state.joinShareId}
+          personalDataLabel={this.state.personalDataLabel}
+          lastPersonalDataLabel={this.state.lastPersonalDataLabel}
+          handleJoinShareIdChange={handleJoinShareIdChange}
+          handleDataLabelChange={handleDataLabelChange}
+          joinShare={joinShare}
+          updateState={setState}
+        />
+      )
+    } else if (shareExistingTable) {
+      return (
+        <ShareExistingTable
+          selectedContextOption={selectedContextOption}
+          availableContextOptions={availableContextOptions}
+          personalDataLabel={this.state.personalDataLabel}
+          lastPersonalDataLabel={this.state.lastPersonalDataLabel}
+          handleDataContextChange={handleDataContextChange}
+          handleDataLabelChange={handleDataLabelChange}
+          initiateShare={initiateShare}
+          updateState={setState}
+        />
+      )
     } else if (createNewTable) {
       return (
         <ShareNewTable
@@ -378,7 +383,8 @@ export default class App extends Component {
 
   joinShare = async () => {
     await this.updatePersonalDataLabelAndKey();
-    const {joinShareId: shareId, personalDataKey, personalDataLabel, selectedDataContext } = this.state;
+    const {joinShareId: shareId, personalDataKey, personalDataLabel, selectedDataContext,
+      joinAndMergeTable } = this.state;
 
     this.setState({ isInProcessOfSharing: true });
     try {
@@ -393,8 +399,9 @@ export default class App extends Component {
       let ownDataContextName;
       if (sharedContextData) {
         const { dataContext: sharedDataContext, itemData } = sharedContextData;
-        const existingDataContext = selectedDataContext && (selectedDataContext !== kNewSharedTable) &&
-                                    await Codap.getDataContext(selectedDataContext);
+
+        const existingDataContext = joinAndMergeTable && selectedDataContext &&
+                                      await Codap.getDataContext(selectedDataContext);
 
         if (!existingDataContext) {
           const newDataContext = sharedDataContext &&
@@ -406,8 +413,7 @@ export default class App extends Component {
           } else {
             throw new Error("failed to create data context");
           }
-        }
-        else {
+        } else {
           ownDataContextName = selectedDataContext;
           await Codap.addNewCollaborationCollections(selectedDataContext, personalDataKey, personalDataLabel, false);
           await Codap.syncDataContexts(selectedDataContext, sharedDataContext, true);
@@ -424,8 +430,7 @@ export default class App extends Component {
           if (!itemData?.[personalDataKey]) {
             Codap.configureUserCase(ownDataContextName, personalDataKey, personalDataLabel, true);
           }
-        }
-        else {
+        } else {
           Codap.moveUserItemsToLast(selectedDataContext, personalDataKey);
           this.writeUserItems(selectedDataContext, personalDataKey);
         }
