@@ -93,7 +93,7 @@ export default class App extends Component {
     };
 
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
-      <option key={dc.name} value={dc.name}>{dc.title}</option>
+      <option key={dc.name} value={dc.name}>{dc.title ?? dc.name}</option>
     );
     const selectedContextOption = selectedDataContext || lastSelectedDataContext || availableDataContexts[0]?.name;
 
