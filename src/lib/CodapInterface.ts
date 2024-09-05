@@ -88,6 +88,7 @@ export interface IConfig {
   preventTopLevelReorg?: boolean;
   preventAttributeDeletion?: boolean;
   allowEmptyAttributeDeletion?: boolean;
+  blockAPIRequests?: boolean;
   respectEditableItemAttribute?: boolean;
 }
 

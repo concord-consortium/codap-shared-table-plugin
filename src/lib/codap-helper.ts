@@ -54,6 +54,7 @@ export class CodapHelper {
       preventTopLevelReorg: true,
       preventAttributeDeletion: false,
       allowEmptyAttributeDeletion: true,
+      blockAPIRequests: true,
       respectEditableItemAttribute: true,
       dimensions
     };
