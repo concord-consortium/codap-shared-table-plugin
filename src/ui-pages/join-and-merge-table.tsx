@@ -46,7 +46,7 @@ export const JoinAndMergeTable = (props: JoinAndMergeTableProps) => {
       <div className="button-row">
         <button
           className="cancel-button"
-          onClick={() => updateState({ joinAndMergeTable: false })}>
+          onClick={() => updateState({ joinAndMergeTable: false, showJoinShareError: false })}>
           {BACK}
         </button>
         <button
