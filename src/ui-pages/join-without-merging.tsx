@@ -29,7 +29,7 @@ export const JoinWithoutMerging = (props: JoinWithoutMergingProps) => {
       <div className="button-row">
         <button
           className="cancel-button"
-          onClick={() => updateState({ joinWithoutMerging: false })}>
+          onClick={() => updateState({ joinWithoutMerging: false, showJoinShareError: false })}>
             {BACK}
         </button>
         <button
