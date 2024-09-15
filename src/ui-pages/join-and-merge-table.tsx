@@ -13,7 +13,7 @@ interface JoinAndMergeTableProps {
   handleDataContextChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   handleJoinShareIdChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleDataLabelChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  joinShare: (dataContextName?: string) => void;
+  joinShare: () => void;
   updateState: (state: Partial<IState>) => void;
 }
 
@@ -51,7 +51,7 @@ export const JoinAndMergeTable = (props: JoinAndMergeTableProps) => {
         </button>
         <button
           disabled={!selectedContextOption || !joinShareId || (!personalDataLabel && !lastPersonalDataLabel)}
-          onClick={() => joinShare(selectedContextOption)}
+          onClick={joinShare}
         >
             {BEGIN_COLLABORATION}
         </button>
