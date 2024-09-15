@@ -83,7 +83,7 @@ export default class App extends Component {
     const setState = (state: Partial<IState>) => this.setState(state);
     const handleJoinShareIdChange = (event: ChangeEvent<HTMLInputElement>) => this.handleJoinShareIdChange(event);
     const handleDataLabelChange = (event: ChangeEvent<HTMLInputElement>) => this.handleDataLabelChange(event);
-    const joinShare = () => this.joinShare();
+    const joinShare = (dataContextName?: string) => this.joinShare(dataContextName);
     const handleDataContextChange = (event: ChangeEvent<HTMLSelectElement>) => this.handleDataContextChange(event);
     const initiateShare = (selectedContext?: string) => {
       if (selectedContext) {
@@ -381,10 +381,10 @@ export default class App extends Component {
     }
   };
 
-  joinShare = async () => {
+  joinShare = async (dataContextName?: string) => {
     await this.updatePersonalDataLabelAndKey();
-    const {joinShareId: shareId, personalDataKey, personalDataLabel, selectedDataContext,
-      joinAndMergeTable } = this.state;
+    const {joinShareId: shareId, personalDataKey, personalDataLabel, joinAndMergeTable } = this.state;
+    const selectedDataContext = dataContextName ?? this.state.selectedDataContext
 
     this.setState({ isInProcessOfSharing: true });
     try {
