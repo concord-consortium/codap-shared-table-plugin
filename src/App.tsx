@@ -62,6 +62,11 @@ export default class App extends Component {
     }
   }
 
+  private get selectedContextOption() {
+    return this.state.selectedDataContext || this.state.lastSelectedDataContext ||
+      this.state.availableDataContexts[0]?.name;
+  }
+
   public render() {
     if (!this.state.shareId) {
       Codap.resizePlugin(kInitialDimensions.width, kInitialDimensions.height);
@@ -73,7 +78,7 @@ export default class App extends Component {
   }
 
   renderFormPage() {
-    const { availableDataContexts, selectedDataContext, lastSelectedDataContext, shareTable, joinTable,
+    const { availableDataContexts, shareTable, joinTable,
       shareExistingTable, joinAndMergeTable, createNewTable, joinWithoutMerging } = this.state;
     const showFirstStep = !shareTable && !joinTable;
     const noSelectedSubOptions = !shareExistingTable && !createNewTable && !joinAndMergeTable && !joinWithoutMerging;
@@ -83,7 +88,6 @@ export default class App extends Component {
     const setState = (state: Partial<IState>) => this.setState(state);
     const handleJoinShareIdChange = (event: ChangeEvent<HTMLInputElement>) => this.handleJoinShareIdChange(event);
     const handleDataLabelChange = (event: ChangeEvent<HTMLInputElement>) => this.handleDataLabelChange(event);
-    const joinShare = () => this.joinShare();
     const handleDataContextChange = (event: ChangeEvent<HTMLSelectElement>) => this.handleDataContextChange(event);
     const initiateShare = (selectedContext?: string) => {
       if (selectedContext) {
@@ -95,7 +99,6 @@ export default class App extends Component {
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title ?? dc.name}</option>
     );
-    const selectedContextOption = selectedDataContext || lastSelectedDataContext || availableDataContexts[0]?.name;
 
     if (showFirstStep) {
       return (
@@ -122,9 +125,9 @@ export default class App extends Component {
           handleJoinShareIdChange={handleJoinShareIdChange}
           handleDataLabelChange={handleDataLabelChange}
           handleDataContextChange={handleDataContextChange}
-          joinShare={joinShare}
+          joinShare={this.joinShare}
           updateState={setState}
-          selectedContextOption={selectedContextOption}
+          selectedContextOption={this.selectedContextOption}
           availableContextOptions={availableContextOptions}
           />
        )
@@ -136,14 +139,14 @@ export default class App extends Component {
           lastPersonalDataLabel={this.state.lastPersonalDataLabel}
           handleJoinShareIdChange={handleJoinShareIdChange}
           handleDataLabelChange={handleDataLabelChange}
-          joinShare={joinShare}
+          joinShare={this.joinShare}
           updateState={setState}
         />
       )
     } else if (shareExistingTable) {
       return (
         <ShareExistingTable
-          selectedContextOption={selectedContextOption}
+          selectedContextOption={this.selectedContextOption}
           availableContextOptions={availableContextOptions}
           personalDataLabel={this.state.personalDataLabel}
           lastPersonalDataLabel={this.state.lastPersonalDataLabel}
@@ -383,8 +386,8 @@ export default class App extends Component {
 
   joinShare = async () => {
     await this.updatePersonalDataLabelAndKey();
-    const {joinShareId: shareId, personalDataKey, personalDataLabel, selectedDataContext,
-      joinAndMergeTable } = this.state;
+    const {joinShareId: shareId, personalDataKey, personalDataLabel, joinAndMergeTable } = this.state;
+    const selectedDataContext = this.selectedContextOption
 
     this.setState({ isInProcessOfSharing: true });
     try {

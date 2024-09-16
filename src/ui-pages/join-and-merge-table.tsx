@@ -26,13 +26,13 @@ export const JoinAndMergeTable = (props: JoinAndMergeTableProps) => {
       <div className="select-stack">
         <div>{SELECT_TABLE_TO_MERGE}</div>
         {availableContextOptions.length > 0
-            ? <select value={selectedContextOption} onChange={handleDataContextChange}>
-                {availableContextOptions}
-              </select>
-            : <div className="warning">
-                {NO_TABLES_TO_MERGE}
-              </div>
-          }
+          ? <select value={selectedContextOption} onChange={handleDataContextChange}>
+              {availableContextOptions}
+            </select>
+          : <div className="warning">
+              {NO_TABLES_TO_MERGE}
+            </div>
+        }
       </div>
       <div className="input-stack">
         <div>{PROVIDE_NAME_OR_LABEL}</div>
@@ -51,7 +51,9 @@ export const JoinAndMergeTable = (props: JoinAndMergeTableProps) => {
         </button>
         <button
           disabled={!selectedContextOption || !joinShareId || (!personalDataLabel && !lastPersonalDataLabel)}
-          onClick={joinShare}>{BEGIN_COLLABORATION}
+          onClick={joinShare}
+        >
+            {BEGIN_COLLABORATION}
         </button>
       </div>
     </div>
