@@ -87,12 +87,12 @@ export default class App extends Component {
     const handleDataContextChange = (event: ChangeEvent<HTMLSelectElement>) => this.handleDataContextChange(event);
     const initiateShare = (selectedContext?: string) => {
       if (selectedContext) this.setState({ selectedDataContext: selectedContext });
-      this.initiateShare()
+      this.initiateShare();
     };
     const joinShare = (selectedContext?: string) => {
       if (selectedContext) this.setState({ selectedDataContext: selectedContext });
-      this.joinShare()
-    }
+      this.joinShare();
+    };
 
     const availableContextOptions = availableDataContexts.map((dc: DataContext) =>
       <option key={dc.name} value={dc.name}>{dc.title ?? dc.name}</option>

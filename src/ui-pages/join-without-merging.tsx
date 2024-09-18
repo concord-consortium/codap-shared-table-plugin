@@ -34,7 +34,7 @@ export const JoinWithoutMerging = (props: JoinWithoutMergingProps) => {
         </button>
         <button
           disabled={!joinShareId || (!personalDataLabel && !lastPersonalDataLabel)}
-          onClick={joinShare}>
+          onClick={() => joinShare()}>
             {BEGIN_COLLABORATION}
         </button>
       </div>
