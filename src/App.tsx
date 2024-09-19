@@ -370,7 +370,7 @@ export default class App extends Component {
       const shareId = randomize("a0", kShareIdLength, { exclude: "0oOiIlL1" });
       this.setState({shareId});
       database.createSharedTable(shareId, personalDataKey);
-      Codap.configureForSharing(dataContextName, this.state.id, true);
+      Codap.configureForSharing(dataContextName, this.state.id, this.state.personalDataKey, true);
 
       const updatedNewContext = await Codap.getDataContext(dataContextName);
       await this.writeDataContext(updatedNewContext);
@@ -422,7 +422,7 @@ export default class App extends Component {
 
           await this.writeDataContext(selectedDataContext);
         }
-        Codap.configureForSharing(ownDataContextName, this.state.id, true);
+        Codap.configureForSharing(ownDataContextName, this.state.id, personalDataKey, true);
 
         // listeners must be added after data context is configured
         database.installUserItemListeners();
@@ -453,7 +453,7 @@ export default class App extends Component {
   };
 
   leaveShare = () => {
-    Codap.configureForSharing(this.state.selectedDataContext, this.state.id, false);
+    Codap.configureForSharing(this.state.selectedDataContext, this.state.id, this.state.personalDataKey, false);
     this.setState({
       shareId: null,
       personalDataLabel: "",

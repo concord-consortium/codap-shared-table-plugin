@@ -2,7 +2,7 @@ import * as randomize from "randomatic";
 import codapInterface, { IConfig } from "./CodapInterface";
 import {
   Attribute, Collection, DataContext, DataContextCreation, CodapItem, CodapItemValue, CodapRequest,
-  CodapRequestResponse, CodapItemValues, CodapRequestHandler
+  CodapRequestResponse, CodapItemValues, CodapRequestHandler, CodapRequests
 } from "./types";
 
 export interface ISaveState {
@@ -31,15 +31,50 @@ const kShareLabelName = "shareName";
 const kCollaboratorKey = "__collaborator__";
 const kEditableAttrName = "__editable__";
 
-function editableAttributeSpec(personalDataKey: string) {
+function shareAttributeSpec(editable = false) {
+  return {
+    name: kShareLabelName,
+    editable,
+    renameable: editable,
+    deleteable: editable
+  };
+}
+
+function collaboratorAttributeSpec(editable = false) {
+  return {
+    name: kCollaboratorKey,
+    editable,
+    renameable: editable,
+    deleteable: editable,
+    hidden: true
+  };
+}
+
+function editableAttributeSpec(personalDataKey: string, editable = false) {
   return {
     name: kEditableAttrName,
     formula: `${kCollaboratorKey}="${personalDataKey}"`,
-    editable: false,
-    renameable: false,
-    deleteable: false,
+    editable,
+    renameable: editable,
+    deleteable: editable,
     hidden: true
   };
+}
+
+function updateAttributeCommands(dataContextName: string, personalDataKey: string, editable = false) {
+  return [{
+    action: "update",
+    resource: attributeResource(dataContextName, "Collaborators", kCollaboratorKey),
+    values: collaboratorAttributeSpec(editable)
+  }, {
+    action: "update",
+    resource: attributeResource(dataContextName, "Collaborators", kShareLabelName),
+    values: shareAttributeSpec(editable),
+  }, {
+    action: "update",
+    resource: attributeResource(dataContextName, "Collaborators", kEditableAttrName),
+    values: editableAttributeSpec(personalDataKey, editable)
+  }];
 }
 
 export class CodapHelper {
@@ -352,19 +387,15 @@ export class CodapHelper {
           pluralCase: "names"
         },
         attrs: [
-          {name: kShareLabelName, editable: false, renameable: false, deleteable: false},
-          {name: kCollaboratorKey, editable: false, renameable: false, deleteable: false, hidden: true},
+          shareAttributeSpec(),
+          collaboratorAttributeSpec(),
           editableAttributeSpec(personalDataKey)
         ]
       });
     }
     else {
-      // if we already have the Collaborators collection, update the __editable__ attribute
-      await codapInterface.sendRequest({
-        action: "update",
-        resource: attributeResource(dataContextName, "Collaborators", kEditableAttrName),
-        values: editableAttributeSpec(personalDataKey)
-      });
+      // if we already have the Collaborators collection, update the collaborator, share, and __editable__ attributes
+      await codapInterface.sendRequest(updateAttributeCommands(dataContextName, personalDataKey));
     }
 
     if (addEmptyDataCollection) {
@@ -565,8 +596,10 @@ export class CodapHelper {
     });
   }
 
-  static configureForSharing(dataContextName: string, controllerId: string, isSharing: boolean) {
-    codapInterface.sendRequest([
+  static configureForSharing(
+    dataContextName: string, controllerId: string, personalDataKey: string, isSharing: boolean
+  ) {
+    const commands: CodapRequests = [
       {
         action: "update",
         resource: dataContextResource(dataContextName),
@@ -583,7 +616,10 @@ export class CodapHelper {
           respectEditableItemAttribute: isSharing
         }
       }
-    ]);
+    ];
+    // If we're unsharing, make the special attributes editable
+    if (!isSharing) commands.push(...updateAttributeCommands(dataContextName, personalDataKey, true));
+    codapInterface.sendRequest(commands);
   }
 
   static async getDataContext(dataContextName: string): Promise<DataContext | null> {
