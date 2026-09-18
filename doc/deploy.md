@@ -2,7 +2,15 @@
 
 This project is configured to automatically deploy branches and tags to S3. These branches and tags are stored in unique folders in S3. Tags can be "released" to production by copying a special `index-top.html` file to the top level S3 folder.
 
-Deploying to S3 is handled by the [S3 Deploy Action](https://github.com/concord-consortium/s3-deploy-action). Building the `index-top.html` is done by webpack when it receives a `DEPLOY_PATH` environment variable from the S3 Deploy Action.
+Deploying to S3 is handled by the [S3 Deploy Action](https://github.com/concord-consortium/s3-deploy-action). Building the `index-top.html` is done by webpack when it receives a `DEPLOY_PATH` environment variable from the S3 Deploy Action. This is done by the `s3-deploy` job in [`ci.yml`](../.github/workflows/ci.yml).
+
+A released version is promoted to the top-level `index.html` by [`release.yml`](../.github/workflows/release.yml) via `workflow_dispatch`.
+
+## AWS Access
+
+The GitHub actions in this project are allowed to update files in S3 using OIDC. An IAM role has been created in AWS with a trust policy that allows GitHub actions in this specific repository to assume this IAM role. The IAM role has a `RepoName` tag and a managed policy that uses this tag to give the role's users permission to update files in `models-resources/[RepoName]`.
+
+See [deploy-setup.md in starter-projects](https://github.com/concord-consortium/starter-projects/blob/main/doc/deploy-setup.md) for how the AWS side is set up.
 
 ## Where to find builds
 
