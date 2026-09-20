@@ -14,11 +14,11 @@ See [deploy-setup.md in starter-projects](https://github.com/concord-consortium/
 
 ## Where to find builds
 
-- **branch builds**: when a developer pushes a branch, GitHub actions will build and deploy it to `starter-projects/branch/[branch-name]/index.html`. If the branch starts or ends with a number this is automatically stripped off and not included in the folder name.
-- **version builds**: when a developer pushes a tag, GitHub actions will build and deploy it to `starter-projects/version/[tag-name]/index.html`
-- **released version path**: the released version of the application is available at `starter-projects/index.html`
-- **main branch**: the main branch build is available at both `starter-projects/index-main.html` and `starter-projects/branch/main/index.html`.  The `index-main.html` form is preferred because it verifies the top level deployment is working for the current code. Additional branches can be added to the top level by updating the `topBranches` configuration in `ci.yml`
-- **staging or other top level paths**: additional top level releases can be added so they are available at `starter-projects/index-[name].html`
+- **branch builds**: when a developer pushes a branch, GitHub actions will build and deploy it to `codap-shared-table-plugin/branch/[branch-name]/index.html`. If the branch starts or ends with a number this is automatically stripped off and not included in the folder name.
+- **version builds**: when a developer pushes a tag, GitHub actions will build and deploy it to `codap-shared-table-plugin/version/[tag-name]/index.html`
+- **released version path**: the released version of the application is available at `codap-shared-table-plugin/index.html`
+- **main branch**: the main branch build is available at both `codap-shared-table-plugin/index-main.html` and `codap-shared-table-plugin/branch/main/index.html`.  The `index-main.html` form is preferred because it verifies the top level deployment is working for the current code. Additional branches can be added to the top level by updating the `topBranches` configuration in `ci.yml`
+- **staging or other top level paths**: additional top level releases can be added so they are available at `codap-shared-table-plugin/index-[name].html`
 
 ## index-top.html
 
