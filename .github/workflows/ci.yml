@@ -66,6 +66,10 @@ jobs:
       - build_test
       - cypress
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      deployments: write
     environment:
       name: ${{ github.ref_type == 'branch' && 'branches' || 'versions' }}
       url: https://models-resources.concord.org/codap-shared-table-plugin/${{ steps.s3-deploy.outputs.deployPath }}/index.html
@@ -78,13 +82,15 @@ jobs:
           # skip installing cypress since it isn't needed for just building
           # This decreases the deploy time quite a bit
           CYPRESS_INSTALL_BINARY: 0
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::612297603577:role/codap-shared-table-plugin
+          aws-region: us-east-1
       - uses: concord-consortium/s3-deploy-action@v1
         id: s3-deploy
         with:
           bucket: models-resources
           prefix: codap-shared-table-plugin
-          awsAccessKeyId: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          awsSecretAccessKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           # Parameters to GHActions have to be strings, so a regular yaml array cannot
           # be used. Instead the `|` turns the following lines into a string
           topBranches: |

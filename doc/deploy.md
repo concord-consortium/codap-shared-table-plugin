@@ -2,15 +2,23 @@
 
 This project is configured to automatically deploy branches and tags to S3. These branches and tags are stored in unique folders in S3. Tags can be "released" to production by copying a special `index-top.html` file to the top level S3 folder.
 
-Deploying to S3 is handled by the [S3 Deploy Action](https://github.com/concord-consortium/s3-deploy-action). Building the `index-top.html` is done by webpack when it receives a `DEPLOY_PATH` environment variable from the S3 Deploy Action.
+Deploying to S3 is handled by the [S3 Deploy Action](https://github.com/concord-consortium/s3-deploy-action). Building the `index-top.html` is done by webpack when it receives a `DEPLOY_PATH` environment variable from the S3 Deploy Action. This is done by the `s3-deploy` job in [`ci.yml`](../.github/workflows/ci.yml).
+
+A released version is promoted to the top-level `index.html` by [`release.yml`](../.github/workflows/release.yml) via `workflow_dispatch`.
+
+## AWS Access
+
+The GitHub actions in this project are allowed to update files in S3 using OIDC. An IAM role has been created in AWS with a trust policy that allows GitHub actions in this specific repository to assume this IAM role. The IAM role has a `RepoName` tag and a managed policy that uses this tag to give the role's users permission to update files in `models-resources/[RepoName]`.
+
+See [deploy-setup.md in starter-projects](https://github.com/concord-consortium/starter-projects/blob/main/doc/deploy-setup.md) for how the AWS side is set up.
 
 ## Where to find builds
 
-- **branch builds**: when a developer pushes a branch, GitHub actions will build and deploy it to `starter-projects/branch/[branch-name]/index.html`. If the branch starts or ends with a number this is automatically stripped off and not included in the folder name.
-- **version builds**: when a developer pushes a tag, GitHub actions will build and deploy it to `starter-projects/version/[tag-name]/index.html`
-- **released version path**: the released version of the application is available at `starter-projects/index.html`
-- **main branch**: the main branch build is available at both `starter-projects/index-main.html` and `starter-projects/branch/main/index.html`.  The `index-main.html` form is preferred because it verifies the top level deployment is working for the current code. Additional branches can be added to the top level by updating the `topBranches` configuration in `ci.yml`
-- **staging or other top level paths**: additional top level releases can be added so they are available at `starter-projects/index-[name].html`
+- **branch builds**: when a developer pushes a branch, GitHub actions will build and deploy it to `codap-shared-table-plugin/branch/[branch-name]/index.html`. If the branch starts or ends with a number this is automatically stripped off and not included in the folder name.
+- **version builds**: when a developer pushes a tag, GitHub actions will build and deploy it to `codap-shared-table-plugin/version/[tag-name]/index.html`
+- **released version path**: the released version of the application is available at `codap-shared-table-plugin/index.html`
+- **main branch**: the main branch build is available at both `codap-shared-table-plugin/index-main.html` and `codap-shared-table-plugin/branch/main/index.html`.  The `index-main.html` form is preferred because it verifies the top level deployment is working for the current code. Additional branches can be added to the top level by updating the `topBranches` configuration in `ci.yml`
+- **staging or other top level paths**: additional top level releases can be added so they are available at `codap-shared-table-plugin/index-[name].html`
 
 ## index-top.html
 

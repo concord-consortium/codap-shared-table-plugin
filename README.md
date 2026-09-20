@@ -1,5 +1,30 @@
 # CODAP Shared Table Plugin
 
+## Deployment
+
+S3 deployment is handled by GitHub Actions using OIDC for AWS authentication. See [deploy-setup.md in starter-projects](https://github.com/concord-consortium/starter-projects/blob/main/doc/deploy-setup.md) for how the AWS side is set up, and [doc/deploy.md](doc/deploy.md) for how deploys work in this repo.
+
+Production releases to S3 are based on the contents of the /dist folder and are built automatically by GitHub Actions
+for each branch and tag pushed to GitHub.
+
+To deploy a production release:
+
+1. Increment version number in package.json
+2. Create new entry in CHANGELOG.md
+3. Run `git log --pretty=oneline --reverse <last release tag>...HEAD | grep '#' | grep -v Merge` and add contents (after edits if needed to CHANGELOG.md)
+4. Run `npm run build`
+5. Copy asset size markdown table from previous release and change sizes to match new sizes in `dist`
+6. Create `release-<version>` branch and commit changes, push to GitHub, create PR and merge
+7. Checkout main and pull
+8. Create an annotated tag for the version, of the form `v[x].[y].[z]`, include at least the version in the tag message. On the command line this can be done with a command like `git tag -a v1.2.3 -m "1.2.3 some info about this version"`
+9. Push the tag to GitHub with a command like: `git push origin v1.2.3`.
+10. Use https://github.com/concord-consortium/codap-shared-table-plugin/releases to make this tag into a GitHub release.
+11. Run the release workflow to update https://models-resources.concord.org/codap-shared-table-plugin/index.html.
+    1. Navigate to the actions page in GitHub and the click the "Release" workflow. This should take you to this page: https://github.com/concord-consortium/codap-shared-table-plugin/actions/workflows/release.yml.
+    2. Click the "Run workflow" menu button.
+    3. Type in the tag name you want to release for example `v1.2.3`.  (Note this won't work until the PR has been merged to main)
+    4. Click the `Run Workflow` button.
+
 ## Development
 
 ### Copying a starter project
@@ -42,8 +67,16 @@
     git push -u origin main
     ```
 7. Open your new repository and update all instances of `starter-projects` to `new-repository` and `Starter Projects` to `New Repository`.
-   Note: this will do some of the configuration for GitHub Actions deployment to S3, but you'll still need to follow
-   the instructions [here](https://docs.google.com/document/d/e/2PACX-1vTpYjbGmUMxk_FswUmapK_RzVyEtm1WdnFcNByp9mqwHnp0nR_EzRUOiubuUCsGwzQgOnut_UiabYOM/pub).
+   Note: this will do some of the configuration for GitHub Actions deployment to S3, but you'll still need to set up
+   AWS access for S3 deployment. From your new repository's root directory, run:
+    ```sh
+    curl -fsSL \
+      https://raw.githubusercontent.com/concord-consortium/starter-projects/main/scripts/create-deploy-role.sh \
+      -o /tmp/create-deploy-role.sh
+    chmod +x /tmp/create-deploy-role.sh
+    /tmp/create-deploy-role.sh new-repository
+    ```
+    Running this with your new repository as your current directory lets the script automatically fill in `role-to-assume` in `.github/workflows/ci.yml` and `release.yml` with the correct ARN. See [deploy-setup.md in starter-projects](https://github.com/concord-consortium/starter-projects/blob/main/doc/deploy-setup.md) for details.
 8. To record the cypress tests results to the cypress dashboard service:
    - go to https://dashboard.cypress.io
    - create a new project
@@ -141,46 +174,13 @@ Alternately, you can run secure without certificates in Chrome:
 ### Building
 
 If you want to build a local version run `npm build`, it will create the files in the `dist` folder.
-You *do not* need to build to deploy the code, that is automatic.  See more info in the Deployment section below.
+You *do not* need to build to deploy the code, that is automatic.  See more info in the [Deployment](#deployment) section above.
 
 ### Notes
 
 1. Make sure if you are using Visual Studio Code that you use the workspace version of TypeScript.
    To ensure that you are open a TypeScript file in VSC and then click on the version number next to
    `TypeScript React` in the status bar and select 'Use Workspace Version' in the popup menu.
-
-## Deployment
-
-Follow the instructions in this
-[Guide](https://docs.google.com/document/d/1EacCSUhaHXaL8ll8xjcd4svyguEO-ipf5aF980-_q8E)
-to setup an S3 & Cloudfront distribution that can be used with GitHub actions.
-See also `s3_deploy.sh`, and `./github/ci.yml`.
-
-Production releases to S3 are based on the contents of the /dist folder and are built automatically by GitHub Actions
-for each branch and tag pushed to GitHub.
-
-Branches are deployed to http://starter-projects.concord.org/branch/<name>.
-If the branch name starts or ends with a number this number is stripped off.
-
-Tags are deployed to http://starter-projects.concord.org/version/<name>.
-
-To deploy a production release:
-
-1. Increment version number in package.json
-2. Create new entry in CHANGELOG.md
-3. Run `git log --pretty=oneline --reverse <last release tag>...HEAD | grep '#' | grep -v Merge` and add contents (after edits if needed to CHANGELOG.md)
-4. Run `npm run build`
-5. Copy asset size markdown table from previous release and change sizes to match new sizes in `dist`
-6. Create `release-<version>` branch and commit changes, push to GitHub, create PR and merge
-7. Checkout main and pull
-8. Create an annotated tag for the version, of the form `v[x].[y].[z]`, include at least the version in the tag message. On the command line this can be done with a command like `git tag -a v1.2.3 -m "1.2.3 some info about this version"`
-9. Push the tag to GitHub with a command like: `git push origin v1.2.3`.
-10. Use https://github.com/concord-consortium/starter-projects/releases to make this tag into a GitHub release.
-11. Run the release workflow to update http://starter-projects.concord.org/index.html. 
-    1. Navigate to the actions page in GitHub and the click the "Release" workflow. This should take you to this page: https://github.com/concord-consortium/starter-projects/actions/workflows/release.yml. 
-    2. Click the "Run workflow" menu button. 
-    3. Type in the tag name you want to release for example `v1.2.3`.  (Note this won't work until the PR has been merged to main)
-    4. Click the `Run Workflow` button.
 
 ### Testing
 
